@@ -1,0 +1,17 @@
+# always_anonymise_system.toml — bundled system-level forced replacement rules.
+#
+# Each entry forces an exact string to be replaced with a known value,
+# applied before the scramble pass.  Both original and replacement are plain
+# strings — numbers are just strings too.
+#
+# Format:
+#   "original text" = "replacement text"
+#
+# Examples (commented out):
+#   "11-22-33" = "00-00-00"
+#   "12345678" = "00000000"
+#   "Jason Farrar" = "John Doe"
+#
+# This file is committed to source control and contains general rules.
+# User-specific rules go in always_anonymise.toml (not committed).
+# If the same original appears in both files, the user file wins.

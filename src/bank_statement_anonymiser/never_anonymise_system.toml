@@ -1,0 +1,103 @@
+# never_anonymise_system.toml — bundled system-level protected words/phrases.
+#
+# Text listed here is left exactly as-is during the scramble pass.
+# Matching is case-insensitive and whitespace-insensitive.
+# Multi-word phrases are matched using a sliding window across consecutive
+# Tj fragments within the same line.
+#
+# This file is committed to source control and contains bank-specific
+# structural text that should never be scrambled.
+# User-specific exclusions go in never_anonymise.toml (not committed).
+# Entries from both files are merged (union); duplicates are dropped.
+#
+# Note: universal date and numeric patterns (e.g. "23 Jan 25", "£1,234.56")
+# are protected by hardcoded regex in the engine and do not need listing here.
+
+exclude = [
+    # --- Payment type codes (TSB, HSBC and similar UK banks) ---
+    "BP",       # Bill Payment
+    "VIS",      # Visa / card transaction
+    "DD",       # Direct Debit
+    "TFR",      # Transfer
+    "SO",       # Standing Order
+    "ATM",      # ATM cash withdrawal
+    "CC",       # Credit Card
+    "OBP",      # Online Banking Payment
+    "CR",       # Credit
+    "DR",       # Debit
+    "))))",     # TSB internal marker
+
+    # --- Balance / structural headers ---
+    "BALANCE BROUGHT FORWARD",
+    "BALANCE CARRIED FORWARD",
+    "Balance Brought Forward",
+    "Balance Carried Forward",
+    "Summary Of Interest On This Statement",
+    "Your current details",
+    "Period",
+    "Account number",
+    "Sort code",
+    "BIC",
+    "IBAN",
+    "Previous Balance",
+    "Paid Out",
+    "Paid In",
+    "New Balance",
+    "Date",
+    "Type",
+    "Description",
+    "Balance",
+    "brought forward",
+    "direct debit",
+    "automated credit",
+    "debit card",
+    "credit card",
+    "transaction",
+    "Call us on",
+    "Your branch",  
+    "Sort Code",
+    "Account Number",
+    "Spend & Save Account",
+    "Your Transactions",
+    "Statement number",
+    "Payment type",
+    "Details",
+    "Money Out",
+    "Money In",
+    "STATEMENT OPENING BALANCE",
+    "STATEMENT CLOSING BALANCE",
+    "Effective from",
+    "Date of previous statement",
+    "Balance on",
+    "Arranged Overdraft limit",
+    "faster payment",
+    "standing",
+    "order",
+    "cash",
+    "withdrawal",
+    "on",
+    "of",
+    "previous",
+    "statement",
+    "to",
+    "number",
+    "opening",
+    "closing",
+    "balance",
+    "Cardholder",
+    "Your credit limit",
+    "Available to spend",
+    "Next month's estimated interest",
+    "Summary of your account",
+    "interest",
+    "Payments received",
+    "New transactions and charges",
+    "Your new balance",
+    "Minimum payment due",
+    "To reach your account by",
+    "BALANCE FROM PREVIOUS STATEMENT",
+    "Date of transaction",
+    "Date entered",
+    "Amount £",
+    "Your credit card statement",
+]

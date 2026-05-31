@@ -1,0 +1,17 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# User-supplied config files (not committed — pass via always_anonymise_path / never_anonymise_path args)
+src/bank_statement_anonymiser/always_anonymise.toml
+src/bank_statement_anonymiser/never_anonymise.toml
+
+# PDF files (example/test statements — not committed)
+*.pdf
