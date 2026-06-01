@@ -144,9 +144,7 @@ _PROTECTED_CHARRUN_PHRASES: frozenset[str] = frozenset(
 # Sort code: 6 digits with hyphens or spaces as separators.
 # Matches: 40-37-28  40 37 28  40-37 28  etc.
 # Does NOT match bare 6-digit runs (too many false positives with phone numbers).
-_SORT_CODE_RE: re.Pattern[str] = re.compile(
-    r"\b(\d{2})[-\s](\d{2})[-\s](\d{2})\b"
-)
+_SORT_CODE_RE: re.Pattern[str] = re.compile(r"\b(\d{2})[-\s](\d{2})[-\s](\d{2})\b")
 
 # Account number: bare 8-digit run, word-boundary anchored.
 _ACCOUNT_RE: re.Pattern[str] = re.compile(r"\b(\d{8})\b")
@@ -157,9 +155,7 @@ _SORT_ACCT_RE: re.Pattern[str] = re.compile(r"\b(\d{6}) (\d{8})\b")
 
 # Credit/debit card: 16 digits in 4 groups of 4, separated by spaces.
 # e.g. "3333 2222 1111 0000"
-_CARD_RE: re.Pattern[str] = re.compile(
-    r"\b(\d{4}) (\d{4}) (\d{4}) (\d{4})\b"
-)
+_CARD_RE: re.Pattern[str] = re.compile(r"\b(\d{4}) (\d{4}) (\d{4}) (\d{4})\b")
 
 # MICR card format: 4 digits, space, 12 digits (e.g. "5402 225003072770").
 # Used on bank giro credit slips where the card number is printed without
@@ -179,9 +175,7 @@ _MICR_LINE_RE: re.Pattern[str] = re.compile(r"<(\d{16})(<[^A-Za-z\n]*[A-Za-z])")
 # (sort code 6 + account 8 concatenated).
 # e.g. "VN72JNEB40372831243535" — only the last 14 digits are replaced;
 # the letter/check-digit prefix is preserved verbatim.
-_IBAN_FULL_RE: re.Pattern[str] = re.compile(
-    r"\b[A-Z0-9]*[A-Z](\d{14})\b", re.IGNORECASE
-)
+_IBAN_FULL_RE: re.Pattern[str] = re.compile(r"\b[A-Z0-9]*[A-Z](\d{14})\b", re.IGNORECASE)
 
 # Spaced UK IBAN: 2-letter country code + 2 check digits + 4-letter bank code +
 # 14 sensitive digits rendered in groups of 4-4-4-2 separated by spaces.
@@ -209,15 +203,15 @@ _URL_RE: re.Pattern[str] = re.compile(
 # _IBAN_SPACED_RE / _IBAN_FULL_RE / _IBAN_TAIL_RE so that sort+account raw digits
 # are already cached in raw_to_scrambled when the IBAN composition logic runs.
 _NUMERIC_ID_PATTERNS: tuple[re.Pattern[str], ...] = (
-    _CARD_RE,          # 16 digits (4×4) — most specific card format
-    _CARD_MICR_RE,     # 16 digits (4+12) — MICR giro slip card format
-    _MICR_LINE_RE,     # <16digits< — MICR giro line (card number in delimiters)
-    _SORT_ACCT_RE,     # 6+8 compound — caches both halves before IBAN processing
-    _SORT_CODE_RE,     # 6 digits with separators
-    _ACCOUNT_RE,       # bare 8 digits
-    _IBAN_SPACED_RE,   # spaced UK IBAN e.g. "GB19 NWBK 6016 2400 3980 04"
-    _IBAN_FULL_RE,     # compact IBAN token (tail-only replacement)
-    _IBAN_TAIL_RE,     # bare 14-digit run fallback
+    _CARD_RE,  # 16 digits (4×4) — most specific card format
+    _CARD_MICR_RE,  # 16 digits (4+12) — MICR giro slip card format
+    _MICR_LINE_RE,  # <16digits< — MICR giro line (card number in delimiters)
+    _SORT_ACCT_RE,  # 6+8 compound — caches both halves before IBAN processing
+    _SORT_CODE_RE,  # 6 digits with separators
+    _ACCOUNT_RE,  # bare 8 digits
+    _IBAN_SPACED_RE,  # spaced UK IBAN e.g. "GB19 NWBK 6016 2400 3980 04"
+    _IBAN_FULL_RE,  # compact IBAN token (tail-only replacement)
+    _IBAN_TAIL_RE,  # bare 14-digit run fallback
 )
 
 # The 26 lowercase and uppercase ASCII letters as tuples.

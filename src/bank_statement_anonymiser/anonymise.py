@@ -145,9 +145,7 @@ _TM_Y_THRESHOLD: float = 2.0
 
 def _bundled_path(filename: str) -> Path:
     """Return the filesystem path to a bundled package resource file."""
-    with resources.as_file(
-        resources.files("bank_statement_anonymiser").joinpath(filename)
-    ) as p:
+    with resources.as_file(resources.files("bank_statement_anonymiser").joinpath(filename)) as p:
         return Path(p)
 
 
@@ -200,6 +198,7 @@ def _load_always_anonymise(
     The system file is always loaded.  The user file (if provided and exists)
     is merged on top — user entries win on key clash.
     """
+
     def _read_toml(path: Path) -> dict[str, str]:
         if not path.exists():
             return {}
@@ -224,6 +223,7 @@ def _load_never_anonymise(
 
     Both system and user ``exclude`` lists are merged (union).
     """
+
     def _read_exclude(path: Path) -> list[str]:
         if not path.exists():
             return []
@@ -234,9 +234,7 @@ def _load_never_anonymise(
     system_phrases = _read_exclude(system_path)
     user_phrases = _read_exclude(user_path) if user_path is not None else []
 
-    combined = frozenset(
-        _normalise_phrase(p) for p in system_phrases + user_phrases if p.strip()
-    )
+    combined = frozenset(_normalise_phrase(p) for p in system_phrases + user_phrases if p.strip())
     return _NeverAnonymiseConfig(phrases=combined)
 
 
@@ -292,9 +290,9 @@ def _is_builtin_protected(text: str) -> bool:
 
 
 class _Fragment(NamedTuple):
-    raw: bytes          # original raw bytes from content stream
-    font: str           # active font name at time of this operand
-    decoded: str        # decoded unicode text
+    raw: bytes  # original raw bytes from content stream
+    font: str  # active font name at time of this operand
+    decoded: str  # decoded unicode text
 
 
 # Marker values for fragment disposition
@@ -304,7 +302,7 @@ _DISP_PROTECTED = "protected"
 
 @dataclass
 class _FragmentDisposition:
-    kind: str                      # _DISP_SCRAMBLE or _DISP_PROTECTED or a replacement str
+    kind: str  # _DISP_SCRAMBLE or _DISP_PROTECTED or a replacement str
     replacement: str | None = None  # set when kind == "always_anonymise"
 
 
@@ -330,6 +328,7 @@ def _collect_fragments(
     Returns:
         List of :class:`_Fragment` objects in content-stream order.
     """
+
     def _decode_raw(raw: bytes, font: str) -> str:
         fwd = forward_maps.get(font)
         if fwd is not None:
@@ -461,10 +460,7 @@ def _scramble_text(
     scramble_map: dict[int, int],
 ) -> str:
     """Scramble letters in *text* using *scramble_map*; digits and symbols unchanged."""
-    return "".join(
-        chr(scramble_map.get(ord(ch), ord(ch))) if ch.isalpha() else ch
-        for ch in text
-    )
+    return "".join(chr(scramble_map.get(ord(ch), ord(ch))) if ch.isalpha() else ch for ch in text)
 
 
 def _scramble_text_font_aware(
@@ -654,9 +650,7 @@ def _build_scramble_bytes_pairs(
                 raw = bytes(operands[0])
                 if raw:
                     dec = _decode_raw(raw, current_font)
-                    indexed_fragments.append(
-                        (instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec))
-                    )
+                    indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
 
@@ -668,9 +662,7 @@ def _build_scramble_bytes_pairs(
                         raw = bytes(item)
                         if raw:
                             dec = _decode_raw(raw, current_font)
-                            indexed_fragments.append(
-                                (instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec))
-                            )
+                            indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
 
@@ -692,9 +684,7 @@ def _build_scramble_bytes_pairs(
     always_replacements: dict[int, str] = {}
 
     # Pre-normalise always_anonymise keys for fast lookup.
-    always_normalised: dict[str, str] = {
-        _normalise_phrase(k): v for k, v in always_cfg.replacements.items()
-    }
+    always_normalised: dict[str, str] = {_normalise_phrase(k): v for k, v in always_cfg.replacements.items()}
 
     for line_range in lines:
         frags_in_line = [indexed_fragments[i][1] for i in line_range]
@@ -708,16 +698,12 @@ def _build_scramble_bytes_pairs(
                 continue
 
             found = False
-            accumulated = ""        # no separator — for always/never/builtin checks
-            accumulated_spaced = "" # space-joined — mirrors pre-pass all_text for numeric ID lookup
+            accumulated = ""  # no separator — for always/never/builtin checks
+            accumulated_spaced = ""  # space-joined — mirrors pre-pass all_text for numeric ID lookup
             for end in range(pos, n):
                 frag_decoded = frags_in_line[end].decoded
                 accumulated += frag_decoded
-                accumulated_spaced = (
-                    accumulated_spaced + " " + frag_decoded
-                    if accumulated_spaced
-                    else frag_decoded
-                )
+                accumulated_spaced = accumulated_spaced + " " + frag_decoded if accumulated_spaced else frag_decoded
                 norm = _normalise_phrase(accumulated)
 
                 # 1. Check always_anonymise first (user wins; already merged).
@@ -730,7 +716,7 @@ def _build_scramble_bytes_pairs(
                     _distribute_replacement(
                         replacement,
                         [line_range[i] for i in range(pos, end + 1)],
-                        frags_in_line[pos:end + 1],
+                        frags_in_line[pos : end + 1],
                         always_replacements,
                     )
                     pos = end + 1
@@ -771,18 +757,14 @@ def _build_scramble_bytes_pairs(
                     _distribute_replacement(
                         replacement,
                         [line_range[i] for i in range(pos, end + 1)],
-                        frags_in_line[pos:end + 1],
+                        frags_in_line[pos : end + 1],
                         always_replacements,
                     )
                     pos = end + 1
                     found = True
                     break
                 _acc_key = (
-                    accumulated
-                    if accumulated in numeric_id_map
-                    else accumulated.strip()
-                    if accumulated.strip() in numeric_id_map
-                    else None
+                    accumulated if accumulated in numeric_id_map else accumulated.strip() if accumulated.strip() in numeric_id_map else None
                 )
                 if _acc_key is not None:
                     replacement = numeric_id_map[_acc_key]
@@ -793,7 +775,7 @@ def _build_scramble_bytes_pairs(
                     _distribute_replacement(
                         replacement,
                         [line_range[i] for i in range(pos, end + 1)],
-                        frags_in_line[pos:end + 1],
+                        frags_in_line[pos : end + 1],
                         always_replacements,
                     )
                     pos = end + 1
@@ -1018,6 +1000,7 @@ def anonymise_pdf(
     Raises:
         FileNotFoundError: If *input_path* does not exist.
     """
+
     def _dbg(msg: str) -> None:
         if debug:
             print(f"[DEBUG] {msg}")
@@ -1040,9 +1023,7 @@ def anonymise_pdf(
     _dbg(f"never_anonymise: {len(never_cfg.phrases)} phrase(s)")
 
     if output_path is None:
-        output_path = input_path.with_name(
-            f"{_ANONYMISED_PREFIX}{input_path.stem}{input_path.suffix}"
-        )
+        output_path = input_path.with_name(f"{_ANONYMISED_PREFIX}{input_path.stem}{input_path.suffix}")
     else:
         output_path = Path(output_path)
 
@@ -1119,8 +1100,5 @@ def anonymise_pdf(
     finally:
         pike_doc.close()
 
-    print(
-        f"Anonymised: {input_path.name} -> {output_path.name} "
-        f"({total_pairs} scramble pair(s))"
-    )
+    print(f"Anonymised: {input_path.name} -> {output_path.name} ({total_pairs} scramble pair(s))")
     return output_path
