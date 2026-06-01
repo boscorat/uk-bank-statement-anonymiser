@@ -46,6 +46,19 @@ dev = [
     "ruff>=0.14.9",
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+minversion = "7.0"
+addopts = "-v --strict-markers --tb=short"
+markers = [
+    "unit: unit tests with isolated components",
+    "integration: integration tests with real PDF operations",
+    "slow: slow tests that may take time to run",
+]
+
 [tool.ruff]
 line-length = 140
 target-version = "py314"

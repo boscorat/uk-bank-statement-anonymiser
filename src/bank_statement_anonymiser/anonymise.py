@@ -239,8 +239,76 @@ def _load_never_anonymise(
 
 
 # ---------------------------------------------------------------------------
-# Digit scrambling
+# Decoding helper
 # ---------------------------------------------------------------------------
+
+
+def _decode_raw_bytes(
+    raw: bytes,
+    font: str,
+    forward_maps: dict[str, dict[int, str]],
+) -> str:
+    """Decode raw PDF content-stream bytes using font's ToUnicode map or fallback encodings.
+
+    Args:
+        raw: The raw bytes from a Tj/TJ operand in the content stream.
+        font: The active font name at the time this operand was encountered.
+        forward_maps: Per-font ToUnicode forward maps (glyph_byte -> unicode),
+            as returned by :func:`_build_font_maps`.
+
+    Returns:
+        Decoded unicode text. If a ToUnicode map exists for the font, uses that.
+        Otherwise tries Latin-1 (common for HSBC), falling back to UTF-8 with
+        replacement characters if Latin-1 fails.
+    """
+    fwd = forward_maps.get(font)
+    if fwd is not None:
+        return "".join(fwd.get(b, "") for b in raw)
+    try:
+        return raw.decode("latin-1")
+    except Exception:
+        return raw.decode("utf-8", errors="replace")
+
+
+# ---------------------------------------------------------------------------
+# Numeric ID lookup helper
+# ---------------------------------------------------------------------------
+
+
+def _lookup_numeric_id(
+    accumulated_spaced: str,
+    accumulated: str,
+    numeric_id_map: dict[str, str],
+) -> str | None:
+    """Return replacement text if a numeric ID match is found, else None.
+
+    Attempts to match the numeric ID against the map in the following order:
+    1. accumulated_spaced (space-joined fragments)
+    2. accumulated_spaced.strip()
+    3. accumulated (concatenated fragments)
+    4. accumulated.strip()
+
+    This order ensures that compound tokens like "403728 31243535" are matched
+    before single tokens like "40-37-28", and that leading/trailing whitespace
+    doesn't prevent matching.
+
+    Args:
+        accumulated_spaced: Space-joined fragment text (e.g., "40 37 28").
+        accumulated: Concatenated fragment text (e.g., "40-37-28").
+        numeric_id_map: Dict mapping numeric IDs to their replacements.
+
+    Returns:
+        The replacement text if a match is found, else None.
+    """
+    for key in [accumulated_spaced, accumulated_spaced.strip(), accumulated, accumulated.strip()]:
+        if key in numeric_id_map:
+            return numeric_id_map[key]
+    return None
+ 
+ 
+ # ---------------------------------------------------------------------------
+ # Digit scrambling
+ # ---------------------------------------------------------------------------
 
 # (Digit scrambling removed: numeric IDs are now replaced by repeating the
 # last two digits of each ID — see _shared._repeat_last_two.)
@@ -329,15 +397,6 @@ def _collect_fragments(
         List of :class:`_Fragment` objects in content-stream order.
     """
 
-    def _decode_raw(raw: bytes, font: str) -> str:
-        fwd = forward_maps.get(font)
-        if fwd is not None:
-            return "".join(fwd.get(b, "") for b in raw)
-        try:
-            return raw.decode("latin-1")
-        except Exception:
-            return raw.decode("utf-8", errors="replace")
-
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
     except Exception:
@@ -359,7 +418,7 @@ def _collect_fragments(
             try:
                 raw = bytes(operands[0])
                 if raw:
-                    dec = _decode_raw(raw, current_font)
+                    dec = _decode_raw_bytes(raw, current_font, forward_maps)
                     fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
             except Exception:
                 pass
@@ -371,7 +430,7 @@ def _collect_fragments(
                     if isinstance(item, pikepdf.String):
                         raw = bytes(item)
                         if raw:
-                            dec = _decode_raw(raw, current_font)
+                            dec = _decode_raw_bytes(raw, current_font, forward_maps)
                             fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
             except Exception:
                 pass
@@ -607,15 +666,6 @@ def _build_scramble_bytes_pairs(
     except Exception:
         return []
 
-    def _decode_raw(raw: bytes, font: str) -> str:
-        fwd = forward_maps.get(font)
-        if fwd is not None:
-            return "".join(fwd.get(b, "") for b in raw)
-        try:
-            return raw.decode("latin-1")
-        except Exception:
-            return raw.decode("utf-8", errors="replace")
-
     # Step 1a: collect (instr_idx, fragment) tuples and line boundaries.
     indexed_fragments: list[tuple[int, _Fragment]] = []
     current_font: str = ""
@@ -649,7 +699,7 @@ def _build_scramble_bytes_pairs(
             try:
                 raw = bytes(operands[0])
                 if raw:
-                    dec = _decode_raw(raw, current_font)
+                    dec = _decode_raw_bytes(raw, current_font, forward_maps)
                     indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
@@ -661,7 +711,7 @@ def _build_scramble_bytes_pairs(
                     if isinstance(item, pikepdf.String):
                         raw = bytes(item)
                         if raw:
-                            dec = _decode_raw(raw, current_font)
+                            dec = _decode_raw_bytes(raw, current_font, forward_maps)
                             indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
@@ -741,33 +791,8 @@ def _build_scramble_bytes_pairs(
                 #    single-fragment tokens like "40-37-28").
                 #    Also try stripped variants to handle fragments with leading/
                 #    trailing whitespace (e.g. "                 5402 2250 0307 2770").
-                _acc_sp_key = (
-                    accumulated_spaced
-                    if accumulated_spaced in numeric_id_map
-                    else accumulated_spaced.strip()
-                    if accumulated_spaced.strip() in numeric_id_map
-                    else None
-                )
-                if _acc_sp_key is not None:
-                    replacement = numeric_id_map[_acc_sp_key]
-                    for i in range(pos, end + 1):
-                        frag_idx = line_range[i]
-                        dispositions[frag_idx] = "always"
-                        matched.add(i)
-                    _distribute_replacement(
-                        replacement,
-                        [line_range[i] for i in range(pos, end + 1)],
-                        frags_in_line[pos : end + 1],
-                        always_replacements,
-                    )
-                    pos = end + 1
-                    found = True
-                    break
-                _acc_key = (
-                    accumulated if accumulated in numeric_id_map else accumulated.strip() if accumulated.strip() in numeric_id_map else None
-                )
-                if _acc_key is not None:
-                    replacement = numeric_id_map[_acc_key]
+                replacement = _lookup_numeric_id(accumulated_spaced, accumulated, numeric_id_map)
+                if replacement is not None:
                     for i in range(pos, end + 1):
                         frag_idx = line_range[i]
                         dispositions[frag_idx] = "always"

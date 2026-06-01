@@ -1,0 +1,40 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.14"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies with uv
+      uses: astral-sh/setup-uv@v2
+      with:
+        version: "0.9.8"
+    
+    - name: Install project dependencies
+      run: uv sync --all-groups
+    
+    - name: Lint with ruff
+      run: uv run ruff check src tests
+    
+    - name: Run pytest
+      run: uv run pytest tests/ -v --tb=short
+    
+    - name: Generate coverage report
+      run: uv run pytest tests/ --cov=bank_statement_anonymiser --cov-report=term-missing
+      continue-on-error: true
