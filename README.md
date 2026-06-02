@@ -29,6 +29,8 @@ pip install uk-bank-statement-anonymiser
 
 ## Quick start
 
+By default, the library automatically detects and anonymises dates, sort codes, account numbers, card numbers, and other sensitive patterns. For custom rules—to force specific replacements or protect additional phrases—see [User config files](#user-config-files) below.
+
 ```python
 from bank_statement_anonymiser import anonymise_pdf
 
@@ -60,8 +62,7 @@ anonymise_pdf(
 )
 ```
 
-User entries are merged with system entries. On a clash in `always_anonymise`, the user file
-wins. `never_anonymise` is a union of both files.
+System config provides defaults; your custom config overrides or extends them. For `always_anonymise`: your rules win on any clash. For `never_anonymise`: both system and user lists are combined (union).
 
 **User config files should not be committed to source control** — they will typically contain
 real account numbers, sort codes, or names that you are trying to protect.
@@ -112,21 +113,17 @@ Anonymises a single PDF and returns the path to the output file.
 | `always_anonymise_path` | Path to a user `always_anonymise.toml` (optional) |
 | `never_anonymise_path` | Path to a user `never_anonymise.toml` (optional) |
 | `debug` | Print diagnostic information to stdout when `True` |
+| **Returns** | **Path to the output PDF file** |
 
 ## How it works
 
-1. **Numeric ID detection** — a document-level scan identifies sort codes, account numbers,
-   IBANs, and card numbers. Each is replaced with a deterministic fake value
-   (last two digits tiled across the full length, e.g. `40-37-28` → `28-28-28`).
-   `always_anonymise` overrides take priority.
+The anonymiser works in three steps:
 
-2. **Protected phrase detection** — fragments matching dates, payment type codes, URLs,
-   numeric values, or entries in `never_anonymise` configs are marked as protected and
-   left unchanged.
+1. **Identify sensitive data** — Detects sort codes, account numbers, IBANs, card numbers, and other patterns defined in config. Each gets a deterministic fake replacement (e.g. `40-37-28` → `28-28-28` — last two digits repeated). This ensures the same data point is always replaced with the same fake value, even across multiple pages.
 
-3. **Content stream rewrite** — pikepdf rewrites the PDF content streams directly,
-   substituting scrambled bytes for original text bytes. Font encoding (Latin-1 and
-   ToUnicode/CMap) is handled transparently, including subset-embedded fonts.
+2. **Protect structural text** — Dates, payment type codes, bank URLs, and any phrases in your `never_anonymise` config are left unchanged. This preserves the document's readability and structure.
+
+3. **Scramble remaining text** — All other letters are scrambled (e.g. `Barclays` → `Dqhyqbvd`), while digits and symbols stay intact. The PDF's layout, fonts, images, and line breaks remain unchanged.
 
 ## Licence
 

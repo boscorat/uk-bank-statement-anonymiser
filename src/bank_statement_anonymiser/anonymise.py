@@ -1002,14 +1002,15 @@ def anonymise_pdf(
 ) -> Path:
     """Anonymise a single PDF using exclusion-based full-page letter scrambling.
 
-    Every letter on every page is scrambled by replacing each ``Tj``/``TJ``
-    content-stream operand at the bytes level.  Digits and symbols are left
-    unchanged.  Text in ``never_anonymise`` configs is preserved as-is.
-    Text in ``always_anonymise`` configs is replaced with a fixed value.
+    The library detects and replaces sensitive data (sort codes, account numbers,
+    card numbers, and other patterns) with deterministic fake values. Structural
+    text like dates, payment codes, and protected phrases remain readable. All other
+    letters are scrambled while digits and symbols stay intact. The PDF's layout,
+    fonts, and images are preserved.
 
     Args:
         input_path: Path to the source PDF to anonymise.
-        output_path: Destination path for the anonymised PDF.  When ``None``,
+        output_path: Destination path for the anonymised PDF. When ``None``,
             the output filename is derived from *input_path* by prepending
             ``anonymised_`` and leaving the stem unchanged.
         always_anonymise_path: Path to a user ``always_anonymise.toml``.
