@@ -1,6 +1,6 @@
 [project]
 name = "uk-bank-statement-anonymiser"
-version = "0.1.0"
+version = "0.1.1"
 description = "Anonymise UK bank statement PDFs by scrambling personal data while preserving document structure."
 readme = "README.md"
 license = "MIT"
