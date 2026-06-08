@@ -239,6 +239,22 @@ def _load_never_anonymise(
 
 
 # ---------------------------------------------------------------------------
+# Font encoding metadata
+# ---------------------------------------------------------------------------
+
+
+class _FontEncoding(NamedTuple):
+    """Encoding metadata for a single PDF font."""
+    font_name: str
+    """Font resource name (e.g., '/F0')."""
+    forward_map: dict[int, str]
+    """CID/glyph_byte -> Unicode character mapping from ToUnicode CMap."""
+    is_identity_h: bool
+    """True if font uses Identity-H encoding (CID-keyed, multi-byte). 
+    False for single-byte encodings like WinAnsiEncoding."""
+
+
+# ---------------------------------------------------------------------------
 # Decoding helper
 # ---------------------------------------------------------------------------
 
@@ -270,9 +286,76 @@ def _decode_raw_bytes(
         return raw.decode("utf-8", errors="replace")
 
 
-# ---------------------------------------------------------------------------
-# Numeric ID lookup helper
-# ---------------------------------------------------------------------------
+def _decode_raw_bytes_v2(
+    raw: bytes,
+    font_encoding: "_FontEncoding",
+) -> str:
+    """Decode raw PDF content-stream bytes using font encoding metadata.
+
+    For Identity-H fonts (is_identity_h=True): treats raw bytes as 2-byte CID
+    values in big-endian order. Looks up each CID in the forward map.
+
+    For single-byte fonts (is_identity_h=False): treats each byte as a glyph
+    code. Looks up in the forward map. Falls back to Latin-1 or UTF-8 if the
+    glyph is not in the map.
+
+    Args:
+        raw: The raw bytes from a Tj/TJ operand in the content stream.
+        font_encoding: Font encoding metadata with forward map and encoding type.
+
+    Returns:
+        Decoded unicode text.
+    """
+    fwd = font_encoding.forward_map
+    
+    if font_encoding.is_identity_h:
+        # Identity-H: each 2-byte sequence is a CID (big-endian)
+        result: list[str] = []
+        i = 0
+        while i < len(raw):
+            if i + 1 < len(raw):
+                # Combine two bytes into a 16-bit CID (big-endian)
+                cid = (raw[i] << 8) | raw[i + 1]
+                result.append(fwd.get(cid, ""))
+                i += 2
+            else:
+                # Odd byte at end — treat as single byte (fallback)
+                result.append(fwd.get(raw[i], ""))
+                i += 1
+        return "".join(result)
+    else:
+        # Single-byte font: each byte is a glyph code
+        chars: list[str] = []
+        for b in raw:
+            if b in fwd:
+                chars.append(fwd[b])
+            else:
+                # Fallback: try Latin-1 or UTF-8
+                try:
+                    chars.append(bytes([b]).decode("latin-1"))
+                except Exception:
+                    chars.append(bytes([b]).decode("utf-8", errors="replace"))
+        return "".join(chars)
+
+
+def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
+    """Detect if a PDF font uses Identity-H encoding (CID-based, multi-byte).
+
+    A font is considered Identity-H if its /Encoding entry is the name
+    '/Identity-H' (case-insensitive check on the string representation).
+
+    Args:
+        f: The font dictionary from /Resources /Font.
+
+    Returns:
+        True if the font uses Identity-H encoding, False otherwise.
+    """
+    encoding = f.get("/Encoding")
+    if encoding is None:
+        return False
+    encoding_str = str(encoding)
+    return encoding_str == "/Identity-H" or encoding_str == "Identity-H"
+
 
 
 def _lookup_numeric_id(
@@ -382,16 +465,22 @@ class _FragmentDisposition:
 def _collect_fragments(
     pike_page: pikepdf.Page,
     forward_maps: dict[str, dict[int, str]],
+    font_encodings: dict[str, "_FontEncoding"] | None = None,
 ) -> list[_Fragment]:
     """Parse *pike_page*'s content stream and return a flat list of fragments.
 
     Each ``Tj``/``TJ`` string operand with non-empty decoded text becomes one
     :class:`_Fragment`.  The active font name is tracked via ``Tf`` operators.
 
+    When font_encodings is provided, uses Identity-H aware decoding for CID-based
+    fonts. Otherwise falls back to single-byte decoding.
+
     Args:
         pike_page: The pikepdf page to inspect.
         forward_maps: Per-font ToUnicode forward maps (glyph_byte -> unicode),
             as returned by :func:`_build_font_maps`.
+        font_encodings: Optional per-font encoding metadata with Identity-H flags.
+            When provided, enables multi-byte CID decoding for Identity-H fonts.
 
     Returns:
         List of :class:`_Fragment` objects in content-stream order.
@@ -418,7 +507,11 @@ def _collect_fragments(
             try:
                 raw = bytes(operands[0])
                 if raw:
-                    dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                    # Use v2 decoder if font_encodings available
+                    if font_encodings and current_font in font_encodings:
+                        dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
+                    else:
+                        dec = _decode_raw_bytes(raw, current_font, forward_maps)
                     fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
             except Exception:
                 pass
@@ -430,7 +523,11 @@ def _collect_fragments(
                     if isinstance(item, pikepdf.String):
                         raw = bytes(item)
                         if raw:
-                            dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                            # Use v2 decoder if font_encodings available
+                            if font_encodings and current_font in font_encodings:
+                                dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
+                            else:
+                                dec = _decode_raw_bytes(raw, current_font, forward_maps)
                             fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
             except Exception:
                 pass
@@ -490,16 +587,37 @@ def _reencode_fragment(
     text: str,
     font: str,
     reverse_maps: dict[str, dict[str, int]],
+    font_encodings: dict[str, "_FontEncoding"] | None = None,
 ) -> bytes | None:
     """Re-encode *text* back to bytes using *font*'s encoding.
+
+    For Identity-H fonts, encodes CIDs as 2-byte big-endian values.
+    For single-byte fonts, encodes as single bytes.
 
     Returns None if re-encoding fails (e.g. character not in font's glyph set).
     """
     if font in reverse_maps:
         rev = reverse_maps[font]
+        
+        # Check if this is an Identity-H font
+        is_identity_h = False
+        if font_encodings and font in font_encodings:
+            is_identity_h = font_encodings[font].is_identity_h
+        
         try:
-            return bytes(rev[c] for c in text)
-        except KeyError:
+            if is_identity_h:
+                # For Identity-H, CIDs can be > 255, so encode as 2-byte big-endian
+                result = bytearray()
+                for c in text:
+                    cid = rev[c]
+                    # Encode as 2-byte big-endian
+                    result.append((cid >> 8) & 0xFF)
+                    result.append(cid & 0xFF)
+                return bytes(result)
+            else:
+                # For single-byte fonts, all codes should be 0-255
+                return bytes(rev[c] for c in text)
+        except (KeyError, ValueError):
             return None
     else:
         try:
@@ -622,6 +740,7 @@ def _build_scramble_bytes_pairs(
     scramble_map: dict[int, int],
     always_cfg: _AlwaysAnonymiseConfig,
     never_cfg: _NeverAnonymiseConfig,
+    font_encodings: dict[str, "_FontEncoding"],
     forward_maps: dict[str, dict[int, str]],
     reverse_maps: dict[str, dict[str, int]],
     bold_fonts: frozenset[str],
@@ -636,6 +755,7 @@ def _build_scramble_bytes_pairs(
         scramble_map: Letter translation table from :func:`_make_scramble_map`.
         always_cfg: Merged always-anonymise replacement rules.
         never_cfg: Merged never-anonymise protected phrases.
+        font_encodings: Per-font encoding metadata with Identity-H flags.
         forward_maps: Per-font ToUnicode forward maps (glyph_byte -> unicode).
         reverse_maps: Per-font ToUnicode reverse maps (unicode -> glyph_byte).
         bold_fonts: Set of font resource names whose BaseFont is bold.
@@ -699,7 +819,11 @@ def _build_scramble_bytes_pairs(
             try:
                 raw = bytes(operands[0])
                 if raw:
-                    dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                    # Use v2 decoder if font_encodings available
+                    if current_font in font_encodings:
+                        dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
+                    else:
+                        dec = _decode_raw_bytes(raw, current_font, forward_maps)
                     indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
@@ -711,7 +835,11 @@ def _build_scramble_bytes_pairs(
                     if isinstance(item, pikepdf.String):
                         raw = bytes(item)
                         if raw:
-                            dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                            # Use v2 decoder if font_encodings available
+                            if current_font in font_encodings:
+                                dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
+                            else:
+                                dec = _decode_raw_bytes(raw, current_font, forward_maps)
                             indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
@@ -853,7 +981,7 @@ def _build_scramble_bytes_pairs(
             if replacement_text is None:
                 seen_raw.add(raw)
                 continue
-            replacement_raw = _reencode_fragment(replacement_text, frag.font, reverse_maps)
+            replacement_raw = _reencode_fragment(replacement_text, frag.font, reverse_maps, font_encodings)
             if replacement_raw is None or replacement_raw == raw:
                 seen_raw.add(raw)
                 continue
@@ -882,7 +1010,7 @@ def _build_scramble_bytes_pairs(
                     seen_raw.add(raw)
                     continue
 
-            scrambled_raw = _reencode_fragment(scrambled_full, frag.font, reverse_maps)
+            scrambled_raw = _reencode_fragment(scrambled_full, frag.font, reverse_maps, font_encodings)
             if scrambled_raw is None or scrambled_raw == raw:
                 seen_raw.add(raw)
                 continue
@@ -988,9 +1116,66 @@ def _build_font_maps(
     return forward_maps, reverse_maps, frozenset(bold_fonts)
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
+def _build_font_maps_v2(
+    pike_page: pikepdf.Page,
+) -> tuple[dict[str, "_FontEncoding"], dict[str, dict[str, int]], frozenset[str]]:
+    """Build per-font font encodings, reverse maps, and bold font name set.
+
+    Returns font encoding metadata (forward map + Identity-H flag), reverse maps
+    for re-encoding, and the set of bold fonts.
+
+    Returns:
+        Tuple of (font_encodings, reverse_maps, bold_fonts) where:
+        - font_encodings: font_name -> _FontEncoding (with forward_map and is_identity_h flag)
+        - reverse_maps: font_name -> {unicode_char -> cid_or_byte}
+        - bold_fonts: set of font resource names (e.g. '/F2') that are bold
+    """
+    font_encodings: dict[str, "_FontEncoding"] = {}
+    reverse_maps: dict[str, dict[str, int]] = {}
+    bold_fonts: set[str] = set()
+
+    try:
+        res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
+        font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
+    except Exception:
+        return font_encodings, reverse_maps, frozenset()
+
+    for fname in font_dict.keys():
+        try:
+            f = font_dict[fname]
+
+            # Detect bold by BaseFont name.
+            base_font = str(f.get("/BaseFont", ""))
+            if "bold" in base_font.lower():
+                bold_fonts.add(str(fname))
+
+            to_uni = f.get("/ToUnicode")
+            if to_uni is None:
+                continue
+            fwd = _parse_tounicode_cmap(bytes(to_uni.read_bytes()))
+            if not fwd:
+                continue
+
+            # Detect Identity-H encoding
+            is_identity_h = _is_identity_h_font(f)
+
+            # Build reverse map and font encoding metadata
+            rev: dict[str, int] = {}
+            for glyph_code, unicode_char in fwd.items():
+                if unicode_char not in rev:
+                    rev[unicode_char] = glyph_code
+
+            fname_str = str(fname)
+            font_encodings[fname_str] = _FontEncoding(
+                font_name=fname_str,
+                forward_map=fwd,
+                is_identity_h=is_identity_h,
+            )
+            reverse_maps[fname_str] = rev
+        except Exception:
+            continue
+
+    return font_encodings, reverse_maps, frozenset(bold_fonts)
 
 
 def anonymise_pdf(
@@ -1091,6 +1276,7 @@ def anonymise_pdf(
         # ------------------------------------------------------------------
         for page_num, pike_page in enumerate(pike_doc.pages, start=1):
             forward_maps, reverse_maps, bold_fonts = _build_font_maps(pike_page)
+            font_encodings, _, _ = _build_font_maps_v2(pike_page)
             _dbg(f"page {page_num}: fonts={list(forward_maps.keys())}, bold={list(bold_fonts)}")
 
             pairs = _build_scramble_bytes_pairs(
@@ -1098,6 +1284,7 @@ def anonymise_pdf(
                 scramble_map,
                 always_cfg,
                 never_cfg,
+                font_encodings,
                 forward_maps,
                 reverse_maps,
                 bold_fonts,
