@@ -32,23 +32,31 @@ import pikepdf
 
 
 def _parse_tounicode_cmap(stream_bytes: bytes) -> dict[int, str]:
-    """Parse a PDF ToUnicode CMap stream into a glyph-byte → Unicode-char mapping.
+    """Parse a PDF ToUnicode CMap stream into a CID/glyph-byte → Unicode-char mapping.
 
     Handles the ``beginbfchar`` / ``endbfchar`` sections found in standard
-    ToUnicode CMaps.  Only single-byte glyph codes (``<XX>``) mapping to a
-    single Unicode code point (``<YYYY>``) are extracted; multi-byte codes and
-    range sections (``beginbfrange``) are ignored.
+    ToUnicode CMaps for both:
+    - Single-byte glyph codes (typical for WinAnsiEncoding): ``<XX>`` → ``<YYYY>``
+    - Multi-byte CID codes (typical for Identity-H): ``<CCCC>`` → ``<UUUU>``
+
+    Range sections (``beginbfrange``) are ignored; only individual character
+    mappings (``bfchar``) are extracted.
 
     Supports both UTF-16-BE (with BOM prefix) and Latin-1 encoded streams,
     which can occur in PDFs with custom font encodings.
+
+    For Identity-H fonts, CID codes are treated as 16-bit integers and stored
+    as keys in the result dict. When decoding content streams, 2-byte CID runs
+    are looked up directly using their 16-bit value as the key.
 
     Args:
         stream_bytes: Raw bytes of the ToUnicode CMap stream.
 
     Returns:
-        Dict mapping each glyph byte value (0–255) to the Unicode character it
-        represents.  Entries where the Unicode code point is U+0000 (unmapped)
-        are omitted.
+        Dict mapping each CID or glyph byte value to the Unicode character it
+        represents. For single-byte fonts, keys are 0–255. For Identity-H fonts,
+        keys are larger 16-bit CID values. Entries where the Unicode code point
+        is U+0000 (unmapped) are omitted.
     """
     # Detect UTF-16-BE encoding (BOM prefix: \xfe\xff) used in some bank PDFs.
     # If not UTF-16-BE, fall back to Latin-1 (common for most PDFs).
@@ -59,12 +67,20 @@ def _parse_tounicode_cmap(stream_bytes: bytes) -> dict[int, str]:
             text = stream_bytes.decode("latin-1", errors="replace")
     else:
         text = stream_bytes.decode("latin-1", errors="replace")
+    
     result: dict[int, str] = {}
-    for m in re.finditer(r"<([0-9a-fA-F]{2})>\s*<([0-9a-fA-F]{4})>", text):
-        glyph_byte = int(m.group(1), 16)
+    
+    # Match both single-byte (<XX>) and multi-byte (<XXXX> or <XXXXX>) CID/glyph codes
+    # to 4-digit Unicode code points (<YYYY>).
+    # The regex accepts 2–5 hex digits for the CID, which covers both:
+    # - Single-byte glyph codes (2 digits): <00> to <FF>
+    # - Multi-byte CID codes (4+ digits): <0001> to <010E> (as seen in NatWest 2025)
+    for m in re.finditer(r"<([0-9a-fA-F]{2,5})>\s*<([0-9a-fA-F]{4})>", text):
+        cid_or_glyph = int(m.group(1), 16)
         unicode_cp = int(m.group(2), 16)
         if unicode_cp != 0:
-            result[glyph_byte] = chr(unicode_cp)
+            result[cid_or_glyph] = chr(unicode_cp)
+    
     return result
 
 
