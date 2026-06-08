@@ -39,6 +39,9 @@ def _parse_tounicode_cmap(stream_bytes: bytes) -> dict[int, str]:
     single Unicode code point (``<YYYY>``) are extracted; multi-byte codes and
     range sections (``beginbfrange``) are ignored.
 
+    Supports both UTF-16-BE (with BOM prefix) and Latin-1 encoded streams,
+    which can occur in PDFs with custom font encodings.
+
     Args:
         stream_bytes: Raw bytes of the ToUnicode CMap stream.
 
@@ -47,7 +50,15 @@ def _parse_tounicode_cmap(stream_bytes: bytes) -> dict[int, str]:
         represents.  Entries where the Unicode code point is U+0000 (unmapped)
         are omitted.
     """
-    text = stream_bytes.decode("latin-1", errors="replace")
+    # Detect UTF-16-BE encoding (BOM prefix: \xfe\xff) used in some bank PDFs.
+    # If not UTF-16-BE, fall back to Latin-1 (common for most PDFs).
+    if stream_bytes.startswith(b"\xfe\xff"):
+        try:
+            text = stream_bytes.decode("utf-16-be")
+        except Exception:
+            text = stream_bytes.decode("latin-1", errors="replace")
+    else:
+        text = stream_bytes.decode("latin-1", errors="replace")
     result: dict[int, str] = {}
     for m in re.finditer(r"<([0-9a-fA-F]{2})>\s*<([0-9a-fA-F]{4})>", text):
         glyph_byte = int(m.group(1), 16)
