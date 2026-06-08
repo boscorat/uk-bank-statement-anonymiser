@@ -187,7 +187,7 @@ wheels = [
 
 [[package]]
 name = "uk-bank-statement-anonymiser"
-version = "0.1.3"
+version = "0.1.4"
 source = { editable = "." }
 dependencies = [
     { name = "pikepdf" },
