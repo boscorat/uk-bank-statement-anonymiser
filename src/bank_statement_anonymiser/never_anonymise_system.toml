@@ -26,6 +26,25 @@ exclude = [
     "CR",       # Credit
     "DR",       # Debit
     "))))",     # TSB internal marker
+    # Halifax
+    "BGC", "Bank Giro Credit",
+	"COR", "Correction",
+	"DEP", "Deposit",
+	"MPI", "Mobile Payment In",
+	"TFR", "Transfer",
+	"BP", "Bill Payments",
+	"CPT", "Cashpoint",
+	"FEE", "Fixed Service",
+	"MPO", "Mobile Payment Out",
+	"CHG", "Charge",
+	"DD", "Direct Debit",
+	"FPI", "Faster Payment In",
+	"PAY", "Payment",
+	"CHQ", "Checque",
+	"DEB", "Debit Card",
+	"FPO", "Faster Payment Out",
+	"SO", "Standing Order",
+
 
     # --- Balance / structural headers ---
     "BALANCE BROUGHT FORWARD",
@@ -100,4 +119,10 @@ exclude = [
     "Date entered",
     "Amount £",
     "Your credit card statement",
+    "Document requested by:",
+	"(Continued on next page)",
+	"Your Account",
+	"CURRENT ACCOUNT",
+	"Transaction Types",
+
 ]
