@@ -357,6 +357,39 @@ def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
     return encoding_str == "/Identity-H" or encoding_str == "Identity-H"
 
 
+def _decode_raw_bytes_safe(
+    raw: bytes,
+    font: str,
+    forward_maps: dict[str, dict[int, str]],
+    font_encodings: dict[str, "_FontEncoding"] | None = None,
+) -> str:
+    """Route to appropriate decoder based on available encoding metadata.
+    
+    This function implements the intentional two-path design:
+    - If font_encodings is available and contains the font, uses the Identity-H
+      aware decoder (_decode_raw_bytes_v2) for multi-byte CID fonts.
+    - Otherwise falls back to the single-byte decoder (_decode_raw_bytes) for
+      legacy PDFs with WinAnsiEncoding or custom single-byte encodings.
+    
+    This dual-path design maintains backward compatibility: fonts without
+    Identity-H metadata are always handled by the original decoder, ensuring
+    safe fallback for PDFs that may not have complete font encoding metadata.
+    
+    Args:
+        raw: The raw bytes from a Tj/TJ operand in the content stream.
+        font: The active font name at the time this operand was encountered.
+        forward_maps: Per-font ToUnicode forward maps, as returned by
+            :func:`_build_font_maps`.
+        font_encodings: Optional per-font encoding metadata. When provided,
+            enables Identity-H aware decoding for CID-based fonts.
+    
+    Returns:
+        Decoded unicode text.
+    """
+    if font_encodings and font in font_encodings:
+        return _decode_raw_bytes_v2(raw, font_encodings[font])
+    return _decode_raw_bytes(raw, font, forward_maps)
+
 
 def _lookup_numeric_id(
     accumulated_spaced: str,
@@ -507,11 +540,7 @@ def _collect_fragments(
             try:
                 raw = bytes(operands[0])
                 if raw:
-                    # Use v2 decoder if font_encodings available
-                    if font_encodings and current_font in font_encodings:
-                        dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
-                    else:
-                        dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                    dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
             except Exception:
                 pass
@@ -523,11 +552,7 @@ def _collect_fragments(
                     if isinstance(item, pikepdf.String):
                         raw = bytes(item)
                         if raw:
-                            # Use v2 decoder if font_encodings available
-                            if font_encodings and current_font in font_encodings:
-                                dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
-                            else:
-                                dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                            dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
             except Exception:
                 pass
@@ -819,11 +844,7 @@ def _build_scramble_bytes_pairs(
             try:
                 raw = bytes(operands[0])
                 if raw:
-                    # Use v2 decoder if font_encodings available
-                    if current_font in font_encodings:
-                        dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
-                    else:
-                        dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                    dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
@@ -835,11 +856,7 @@ def _build_scramble_bytes_pairs(
                     if isinstance(item, pikepdf.String):
                         raw = bytes(item)
                         if raw:
-                            # Use v2 decoder if font_encodings available
-                            if current_font in font_encodings:
-                                dec = _decode_raw_bytes_v2(raw, font_encodings[current_font])
-                            else:
-                                dec = _decode_raw_bytes(raw, current_font, forward_maps)
+                            dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
             except Exception:
                 pass
