@@ -131,7 +131,7 @@ exclude = [
 	"Debit Card Transaction", "DEBIT CARD TRANSACTION",
 	"Debit", "Card", "Direct", "Debit", "Automated", "Credit",
 	"BROUGHT FORWARD", "BROUGHT", "FORWARD",
-    "Halifax is a division of Bank of Scotland",
+    "Halifax is a division of Bank of Scotland plc. Registered in Scotland No. SC327000. Registered Office: The Mound, Edinburgh EH1 1YZ.",
 
 	"REV", "MR", "MRS", "MS", "DCR", "DOC", "DOCTOR", "MASTER", "MISS"
 
