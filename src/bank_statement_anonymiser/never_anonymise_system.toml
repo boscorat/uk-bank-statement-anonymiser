@@ -124,5 +124,15 @@ exclude = [
 	"Your Account",
 	"CURRENT ACCOUNT",
 	"Transaction Types",
+    "Rates", "Platinum",
+	"Automated Credit", "AUTOMATED CREDIT",
+	"Direct Debit", "DIRECT DEBIT",
+	"Card Transaction", "CARD TRANSACTION",
+	"Debit Card Transaction", "DEBIT CARD TRANSACTION",
+	"Debit", "Card", "Direct", "Debit", "Automated", "Credit",
+	"BROUGHT FORWARD", "BROUGHT", "FORWARD",
+    "Halifax is a division of Bank of Scotland",
+
+	"REV", "MR", "MRS", "MS", "DCR", "DOC", "DOCTOR", "MASTER", "MISS"
 
 ]
