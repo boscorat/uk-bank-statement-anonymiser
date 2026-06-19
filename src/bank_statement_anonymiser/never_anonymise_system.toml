@@ -27,7 +27,7 @@ exclude = [
     "DR",       # Debit
     "))))",     # TSB internal marker
     # Halifax
-    "BGC", "Bank Giro Credit",
+	"BGC", "Bank Giro Credit",
 	"COR", "Correction",
 	"DEP", "Deposit",
 	"MPI", "Mobile Payment In",
@@ -132,6 +132,10 @@ exclude = [
 	"Debit", "Card", "Direct", "Debit", "Automated", "Credit",
 	"BROUGHT FORWARD", "BROUGHT", "FORWARD",
     "Halifax is a division of Bank of Scotland plc. Registered in Scotland No. SC327000. Registered Office: The Mound, Edinburgh EH1 1YZ.",
+	"National Westminster Bank plc, registered in England and Wales No. 929027. Registered office: 250 Bishopsgate, London EC2M 4AA. Authorised by the Prudential Regulation ",	
+	"National Westminster Bank Plc. Registered in England and Wales No. 929027. Registered Office: 250 Bishopsgate, London EC2M 4AA.",
+	"National Westminster Bank",
+	"National Westminster Bank Plc. Registered in England & Wales No.929027.",
 
 	"REV", "MR", "MRS", "MS", "DCR", "DOC", "DOCTOR", "MASTER", "MISS"
 
