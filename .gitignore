@@ -15,3 +15,6 @@ src/bank_statement_anonymiser/never_anonymise.toml
 
 # PDF files (example/test statements — not committed)
 *.pdf
+
+# uv files
+.python-version
