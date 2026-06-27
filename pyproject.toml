@@ -7,7 +7,7 @@ license = "MIT"
 authors = [
     { name = "Jason Farrar", email = "farrar.jason1@gmail.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 keywords = [
     "bank-statement", "pdf", "anonymise", "anonymize",
     "privacy", "gdpr", "pikepdf", "uk", "hsbc", "natwest", "tsb",
@@ -19,7 +19,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Office/Business :: Financial",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
