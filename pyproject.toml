@@ -11,16 +11,22 @@ requires-python = ">=3.11"
 keywords = [
     "bank-statement", "pdf", "anonymise", "anonymize",
     "privacy", "gdpr", "pikepdf", "uk", "hsbc", "natwest", "tsb",
+    "redact", "pii",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Financial and Insurance Industry",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Office/Business :: Financial",
+    "Topic :: Security",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
@@ -32,6 +38,7 @@ dependencies = [
 Homepage = "https://github.com/boscorat/uk-bank-statement-anonymiser"
 Repository = "https://github.com/boscorat/uk-bank-statement-anonymiser"
 Issues = "https://github.com/boscorat/uk-bank-statement-anonymiser/issues"
+Changelog = "https://github.com/boscorat/uk-bank-statement-anonymiser/blob/master/CHANGELOG.md"
 
 [build-system]
 requires = ["uv_build>=0.9.8,<0.12.0"]
