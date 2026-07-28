@@ -1,5 +1,7 @@
 # Anonymisation Review: [Bank Name] — [Account Type]
 
+> **Privacy:** Do not include any real personal data (names, account numbers, addresses). Describe issues generically.
+
 | Field | Value |
 |-------|-------|
 | **Contributor** | @your-github-username |
