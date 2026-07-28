@@ -129,6 +129,14 @@ anonymise-pdf statement.pdf -o output.pdf
 anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
 ```
 
+## Related projects
+
+This library is used by other projects in the boscorat ecosystem:
+
+- **[openstan](https://github.com/boscorat/openstan)** — Free, offline UK bank statement analyser. Parse, analyse, and export your statements to Excel, CSV, or JSON. Uses `uk-bank-statement-anonymiser` to redact statements for safe sharing. Website: [openstan.org](https://openstan.org)
+
+- **[bank_statement_parser](https://github.com/boscorat/bank_statement_parser)** — Parse bank statement PDFs, extract structured transaction data, and persist results to Parquet or SQLite. Includes optional PDF anonymisation via `uk-bank-statement-anonymiser`.
+
 ## Contributing
 
 The most valuable contribution is testing the anonymiser against real bank statements from your own accounts. Your PDFs never leave your machine — you only submit a review report.
