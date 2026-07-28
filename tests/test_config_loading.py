@@ -343,7 +343,7 @@ class TestBundledSystemToml:
         assert len(result.phrases) >= 10
 
 
-class TestNormalisePhrasEdgeCases:
+class TestNormalisePhraseEdgeCases:
     """Edge case tests for _normalise_phrase robustness."""
 
     @pytest.mark.unit
