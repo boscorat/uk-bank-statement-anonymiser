@@ -344,11 +344,21 @@ def _repeat_last_two(raw_digits: str) -> str:
 
     Args:
         raw_digits: String of digit characters only (e.g. ``"40372831243535"``).
+            Empty strings or those with < 2 chars are handled safely by fallback.
 
     Returns:
         Replacement digit string of the same length (e.g. ``"35353535353535"``).
     """
     n = len(raw_digits)
+    
+    # Edge case: empty string
+    if n == 0:
+        return ""
+    
+    # Edge case: single character
+    if n == 1:
+        return raw_digits[0] if raw_digits[0] != "0" else "1"
+    
     tail2 = raw_digits[-2:]
     candidate = (tail2 * ((n // 2) + 1))[:n]
     if candidate != raw_digits:
