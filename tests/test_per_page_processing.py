@@ -79,9 +79,9 @@ def _empty_configs() -> tuple[_AlwaysAnonymiseConfig, _NeverAnonymiseConfig]:
 
 def _page_maps(page: pikepdf.Page):
     """Return (font_encodings, forward_maps, reverse_maps, bold_fonts) for a page."""
-    forward_maps, reverse_maps_old, bold_fonts = _build_font_maps(page)
-    font_encodings, reverse_maps, bold_fonts2 = _build_font_maps_v2(page)
-    # bold_fonts comes from _build_font_maps (the original builder used by the function)
+    forward_maps, reverse_maps, bold_fonts = _build_font_maps(page)
+    font_encodings, _, bold_fonts2 = _build_font_maps_v2(page)
+    # Match anonymise_pdf(): reverse_maps and bold_fonts come from _build_font_maps.
     return font_encodings, forward_maps, reverse_maps, bold_fonts | bold_fonts2
 
 
