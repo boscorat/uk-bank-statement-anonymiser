@@ -10,7 +10,6 @@ This module provides:
 from __future__ import annotations
 
 import random
-import tempfile
 from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock, patch
