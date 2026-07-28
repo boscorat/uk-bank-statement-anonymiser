@@ -358,7 +358,7 @@ def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
     """Detect if a PDF font uses Identity-H encoding (CID-based, multi-byte).
 
     A font is considered Identity-H if its /Encoding entry is the name
-    '/Identity-H' (case-insensitive check on the string representation).
+    '/Identity-H' (handles both hyphen and underscore variants).
     Returns False if font dictionary is None, malformed, or lacks encoding.
 
     Args:
@@ -374,7 +374,8 @@ def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
         if encoding is None:
             return False
         encoding_str = str(encoding)
-        return encoding_str == "/Identity-H" or encoding_str == "Identity-H"
+        # Handle both /Identity-H and /Identity_H (pikepdf uses underscore)
+        return encoding_str in ("/Identity-H", "Identity-H", "/Identity_H", "Identity_H")
     except (AttributeError, TypeError, KeyError):
         return False
 

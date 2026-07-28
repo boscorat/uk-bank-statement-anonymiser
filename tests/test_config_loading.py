@@ -339,3 +339,156 @@ class TestBundledSystemToml:
         path = _bundled_path("never_anonymise_system.toml")
         result = _load_never_anonymise(system_path=path, user_path=None)
         assert len(result.phrases) >= 10
+
+
+class TestNormalisePhrasEdgeCases:
+    """Edge case tests for _normalise_phrase robustness."""
+
+    @pytest.mark.unit
+    def test_normalise_phrase_empty_string(self):
+        """
+        Verify that empty string returns empty string.
+
+        Given: Empty string ""
+        When: _normalise_phrase is called
+        Then: Returns empty string
+        """
+        result = _normalise_phrase("")
+        assert result == "", f"Expected empty string, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_whitespace_only(self):
+        """
+        Verify that whitespace-only string returns empty string.
+
+        Given: Whitespace-only string "   "
+        When: _normalise_phrase is called
+        Then: Returns empty string (stripped away)
+        """
+        result = _normalise_phrase("   ")
+        assert result == "", f"Expected empty string, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_none_handled_safely(self):
+        """
+        Verify that None input is handled safely without crashing.
+
+        Given: None value
+        When: _normalise_phrase is called
+        Then: Returns empty string (defensive check)
+        """
+        # The implementation should check for None or non-string
+        result = _normalise_phrase(None)  # type: ignore
+        assert result == "", f"Expected empty string for None, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_colon_only(self):
+        """
+        Verify that colon-only string returns empty string.
+
+        Given: Colon-only string ":"
+        When: _normalise_phrase is called
+        Then: Returns empty string (stripped as trailing colon + all whitespace)
+        """
+        result = _normalise_phrase(":")
+        assert result == "", f"Expected empty string, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_multiple_colons(self):
+        """
+        Verify that multiple colons are only stripped from end.
+
+        Given: String "Balance::"
+        When: _normalise_phrase is called
+        Then: Strips all trailing colons correctly
+        """
+        result = _normalise_phrase("Balance::")
+        assert result == "balance", f"Expected 'balance', got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_mixed_whitespace(self):
+        """
+        Verify that tabs and newlines are handled correctly.
+
+        Given: String with tabs and newlines "Balance\t\nForward"
+        When: _normalise_phrase is called
+        Then: All internal whitespace removed
+        """
+        result = _normalise_phrase("Balance\t\nForward")
+        assert result == "balanceforward", f"Expected 'balanceforward', got {result!r}"
+
+    """Edge case tests for _normalise_phrase robustness."""
+
+    @pytest.mark.unit
+    def test_normalise_phrase_empty_string(self):
+        """
+        Verify that empty string returns empty string.
+
+        Given: Empty string ""
+        When: _normalise_phrase is called
+        Then: Returns empty string
+        """
+        result = _normalise_phrase("")
+        assert result == "", f"Expected empty string, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_whitespace_only(self):
+        """
+        Verify that whitespace-only string returns empty string.
+
+        Given: Whitespace-only string "   "
+        When: _normalise_phrase is called
+        Then: Returns empty string (stripped away)
+        """
+        result = _normalise_phrase("   ")
+        assert result == "", f"Expected empty string, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_none_handled_safely(self):
+        """
+        Verify that None input is handled safely without crashing.
+
+        Given: None value
+        When: _normalise_phrase is called
+        Then: Returns empty string (defensive check)
+        """
+        # The implementation should check for None or non-string
+        result = _normalise_phrase(None)  # type: ignore
+        assert result == "", f"Expected empty string for None, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_colon_only(self):
+        """
+        Verify that colon-only string returns empty string.
+
+        Given: Colon-only string ":"
+        When: _normalise_phrase is called
+        Then: Returns empty string (stripped as trailing colon + all whitespace)
+        """
+        result = _normalise_phrase(":")
+        assert result == "", f"Expected empty string, got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_multiple_colons(self):
+        """
+        Verify that multiple colons are only stripped from end.
+
+        Given: String "Balance::"
+        When: _normalise_phrase is called
+        Then: Strips all trailing colons correctly
+        """
+        result = _normalise_phrase("Balance::")
+        assert result == "balance", f"Expected 'balance', got {result!r}"
+
+    @pytest.mark.unit
+    def test_normalise_phrase_mixed_whitespace(self):
+        """
+        Verify that tabs and newlines are handled correctly.
+
+        Given: String with tabs and newlines "Balance\t\nForward"
+        When: _normalise_phrase is called
+        Then: All internal whitespace removed
+        """
+        result = _normalise_phrase("Balance\t\nForward")
+        assert result == "balanceforward", f"Expected 'balanceforward', got {result!r}"
+
