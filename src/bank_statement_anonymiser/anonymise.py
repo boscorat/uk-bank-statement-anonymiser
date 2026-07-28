@@ -343,6 +343,7 @@ def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
 
     A font is considered Identity-H if its /Encoding entry is the name
     '/Identity-H' (case-insensitive check on the string representation).
+    Returns False if font dictionary is None, malformed, or lacks encoding.
 
     Args:
         f: The font dictionary from /Resources /Font.
@@ -350,11 +351,16 @@ def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
     Returns:
         True if the font uses Identity-H encoding, False otherwise.
     """
-    encoding = f.get("/Encoding")
-    if encoding is None:
+    if f is None:
         return False
-    encoding_str = str(encoding)
-    return encoding_str == "/Identity-H" or encoding_str == "Identity-H"
+    try:
+        encoding = f.get("/Encoding")
+        if encoding is None:
+            return False
+        encoding_str = str(encoding)
+        return encoding_str == "/Identity-H" or encoding_str == "Identity-H"
+    except (AttributeError, TypeError, KeyError):
+        return False
 
 
 def _decode_raw_bytes_safe(
