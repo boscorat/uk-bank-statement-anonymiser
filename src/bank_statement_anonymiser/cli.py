@@ -36,9 +36,7 @@ def main(argv: list[str] | None = None) -> None:
         help="Path to a user never_anonymise.toml",
     )
     parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Print diagnostic information to stdout",
+        help="Print diagnostic information to stdout (may include sensitive values from your config)",
     )
     parser.add_argument(
         "-V",
