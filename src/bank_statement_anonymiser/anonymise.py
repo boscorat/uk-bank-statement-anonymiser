@@ -268,7 +268,10 @@ def _load_never_anonymise(
         try:
             with path.open("rb") as fh:
                 data = tomllib.load(fh)
-            return data.get("exclude", [])
+            raw = data.get("exclude", [])
+            if not isinstance(raw, list):
+                return []
+            return [str(item) for item in raw]
         except (IsADirectoryError, PermissionError, OSError) as e:
             if is_user:
                 raise ValueError(f"Failed to load user config '{path}': {e}") from e
@@ -277,7 +280,7 @@ def _load_never_anonymise(
     system_phrases = _read_exclude(system_path)
     user_phrases = _read_exclude(user_path, is_user=True)
 
-    combined = frozenset(_normalise_phrase(p) for p in system_phrases + user_phrases if p.strip())
+    combined = frozenset(p for p in (_normalise_phrase(phrase) for phrase in system_phrases + user_phrases) if p)
     return _NeverAnonymiseConfig(phrases=combined)
 
 

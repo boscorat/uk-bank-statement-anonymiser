@@ -285,6 +285,24 @@ class TestLoadNeverAnonymise:
         assert "balance" in result.phrases
         assert "date" in result.phrases
 
+    @pytest.mark.unit
+    def test_non_list_exclude_ignored(self, tmp_path):
+        """If 'exclude' is not a list (e.g. a string or int), it should be ignored."""
+        system = tmp_path / "sys.toml"
+        system.write_bytes(b'exclude = "Balance"\n')
+        result = _load_never_anonymise(system_path=system, user_path=None)
+        assert len(result.phrases) == 0
+
+    @pytest.mark.unit
+    def test_non_string_entries_coerced(self, tmp_path):
+        """Non-string entries in exclude list should be coerced to str, not crash."""
+        system = tmp_path / "sys.toml"
+        system.write_bytes(b'exclude = ["Balance", 99, true]\n')
+        result = _load_never_anonymise(system_path=system, user_path=None)
+        assert "balance" in result.phrases
+        assert "99" in result.phrases
+        assert "true" in result.phrases
+
 
 # ---------------------------------------------------------------------------
 # Module 5: Bundled system TOML integration
