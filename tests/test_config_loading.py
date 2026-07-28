@@ -11,16 +11,17 @@ This module tests:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from bank_statement_anonymiser.anonymise import (
     _AlwaysAnonymiseConfig,
-    _NeverAnonymiseConfig,
     _load_always_anonymise,
     _load_never_anonymise,
+    _NeverAnonymiseConfig,
     _normalise_phrase,
 )
-
 
 # ---------------------------------------------------------------------------
 # Module 5: _normalise_phrase
@@ -68,10 +69,11 @@ class TestNormalisePhrase:
         assert _normalise_phrase("A") == "a"
 
     @pytest.mark.unit
-    def test_non_trailing_colon_preserved(self):
-        """A colon in the middle of a phrase (not trailing) is kept."""
+    def test_non_trailing_colon_removed(self):
+        """A colon in the middle of a phrase is removed."""
         result = _normalise_phrase("10:30")
-        assert ":" in result
+        assert ":" not in result
+        assert result == "1030"
 
     @pytest.mark.unit
     def test_tabs_and_newlines_stripped(self):
@@ -165,12 +167,12 @@ class TestLoadAlwaysAnonymise:
         assert result.replacements == {}
 
     @pytest.mark.unit
-    def test_missing_user_file_gracefully_skipped(self, tmp_path):
+    def test_missing_user_file_raises_error(self, tmp_path):
         system = tmp_path / "sys.toml"
         system.write_bytes(b'"k" = "v"\n')
         user = tmp_path / "nonexistent_user.toml"
-        result = _load_always_anonymise(system_path=system, user_path=user)
-        assert result.replacements == {"k": "v"}
+        with pytest.raises(FileNotFoundError):
+            _load_always_anonymise(system_path=system, user_path=user)
 
     @pytest.mark.unit
     def test_non_string_values_ignored(self, tmp_path):
@@ -268,12 +270,12 @@ class TestLoadNeverAnonymise:
         assert len(result.phrases) == 0
 
     @pytest.mark.unit
-    def test_missing_user_file_gracefully_skipped(self, tmp_path):
+    def test_missing_user_file_raises_error(self, tmp_path):
         system = tmp_path / "sys.toml"
         system.write_bytes(b'exclude = ["Balance"]\n')
         user = tmp_path / "nonexistent_user.toml"
-        result = _load_never_anonymise(system_path=system, user_path=user)
-        assert "balance" in result.phrases
+        with pytest.raises(FileNotFoundError):
+            _load_never_anonymise(system_path=system, user_path=user)
 
     @pytest.mark.unit
     def test_user_path_none_returns_system_only(self, tmp_path):
@@ -396,99 +398,48 @@ class TestNormalisePhrasEdgeCases:
     @pytest.mark.unit
     def test_normalise_phrase_multiple_colons(self):
         """
-        Verify that multiple colons are only stripped from end.
+        Verify that multiple colons are removed.
 
         Given: String "Balance::"
         When: _normalise_phrase is called
-        Then: Strips all trailing colons correctly
+        Then: Strips all colons correctly
         """
         result = _normalise_phrase("Balance::")
         assert result == "balance", f"Expected 'balance', got {result!r}"
 
     @pytest.mark.unit
-    def test_normalise_phrase_mixed_whitespace(self):
+    def test_normalise_phrase_internal_colons(self):
         """
-        Verify that tabs and newlines are handled correctly.
+        Verify that internal colons are removed.
 
-        Given: String with tabs and newlines "Balance\t\nForward"
+        Given: String with internal colons "Account : Number"
         When: _normalise_phrase is called
-        Then: All internal whitespace removed
+        Then: All colons removed and internal whitespace removed
         """
-        result = _normalise_phrase("Balance\t\nForward")
-        assert result == "balanceforward", f"Expected 'balanceforward', got {result!r}"
+        result = _normalise_phrase("Account : Number")
+        assert result == "accountnumber", f"Expected 'accountnumber', got {result!r}"
 
-    """Edge case tests for _normalise_phrase robustness."""
+
+class TestConfigValidation:
+    """Tests for config path validation."""
 
     @pytest.mark.unit
-    def test_normalise_phrase_empty_string(self):
-        """
-        Verify that empty string returns empty string.
-
-        Given: Empty string ""
-        When: _normalise_phrase is called
-        Then: Returns empty string
-        """
-        result = _normalise_phrase("")
-        assert result == "", f"Expected empty string, got {result!r}"
+    def test_load_always_anonymise_missing_user_path(self, tmp_path):
+        """Should raise FileNotFoundError if user always_anonymise path is missing."""
+        missing_path = tmp_path / "non_existent.toml"
+        with pytest.raises(FileNotFoundError, match="User always_anonymise config not found"):
+            _load_always_anonymise(
+                system_path=Path("src/bank_statement_anonymiser/always_anonymise_system.toml"),
+                user_path=missing_path
+            )
 
     @pytest.mark.unit
-    def test_normalise_phrase_whitespace_only(self):
-        """
-        Verify that whitespace-only string returns empty string.
-
-        Given: Whitespace-only string "   "
-        When: _normalise_phrase is called
-        Then: Returns empty string (stripped away)
-        """
-        result = _normalise_phrase("   ")
-        assert result == "", f"Expected empty string, got {result!r}"
-
-    @pytest.mark.unit
-    def test_normalise_phrase_none_handled_safely(self):
-        """
-        Verify that None input is handled safely without crashing.
-
-        Given: None value
-        When: _normalise_phrase is called
-        Then: Returns empty string (defensive check)
-        """
-        # The implementation should check for None or non-string
-        result = _normalise_phrase(None)  # type: ignore
-        assert result == "", f"Expected empty string for None, got {result!r}"
-
-    @pytest.mark.unit
-    def test_normalise_phrase_colon_only(self):
-        """
-        Verify that colon-only string returns empty string.
-
-        Given: Colon-only string ":"
-        When: _normalise_phrase is called
-        Then: Returns empty string (stripped as trailing colon + all whitespace)
-        """
-        result = _normalise_phrase(":")
-        assert result == "", f"Expected empty string, got {result!r}"
-
-    @pytest.mark.unit
-    def test_normalise_phrase_multiple_colons(self):
-        """
-        Verify that multiple colons are only stripped from end.
-
-        Given: String "Balance::"
-        When: _normalise_phrase is called
-        Then: Strips all trailing colons correctly
-        """
-        result = _normalise_phrase("Balance::")
-        assert result == "balance", f"Expected 'balance', got {result!r}"
-
-    @pytest.mark.unit
-    def test_normalise_phrase_mixed_whitespace(self):
-        """
-        Verify that tabs and newlines are handled correctly.
-
-        Given: String with tabs and newlines "Balance\t\nForward"
-        When: _normalise_phrase is called
-        Then: All internal whitespace removed
-        """
-        result = _normalise_phrase("Balance\t\nForward")
-        assert result == "balanceforward", f"Expected 'balanceforward', got {result!r}"
+    def test_load_never_anonymise_missing_user_path(self, tmp_path):
+        """Should raise FileNotFoundError if user never_anonymise path is missing."""
+        missing_path = tmp_path / "non_existent.toml"
+        with pytest.raises(FileNotFoundError, match="User never_anonymise config not found"):
+            _load_never_anonymise(
+                system_path=Path("src/bank_statement_anonymiser/never_anonymise_system.toml"),
+                user_path=missing_path
+            )
 

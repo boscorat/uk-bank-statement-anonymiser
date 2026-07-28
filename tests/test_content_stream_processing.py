@@ -38,7 +38,6 @@ from bank_statement_anonymiser.anonymise import (
     _Fragment,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers: build synthetic pikepdf pages with controlled content streams
 # ---------------------------------------------------------------------------
@@ -814,7 +813,7 @@ class TestLineBreakOperators:
         frags1 = _collect_fragments(page1, {})
         frags2 = _collect_fragments(page2, {})
 
-        del pdf1, pdf2  # noqa: F841 — held only to prevent premature GC
+        del pdf1, pdf2
 
         decoded1 = [f.decoded for f in frags1]
         decoded2 = [f.decoded for f in frags2]

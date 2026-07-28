@@ -20,26 +20,25 @@ All three real-world encoding strategies are covered:
 
 from __future__ import annotations
 
-import pytest
 import pikepdf
+import pytest
 
 from bank_statement_anonymiser._shared import (
-    _parse_tounicode_cmap,
     _LOWER_LETTERS,
     _UPPER_LETTERS,
     _make_scramble_map,
+    _parse_tounicode_cmap,
 )
 from bank_statement_anonymiser.anonymise import (
-    _FontEncoding,
     _decode_raw_bytes,
-    _decode_raw_bytes_v2,
     _decode_raw_bytes_safe,
+    _decode_raw_bytes_v2,
+    _FontEncoding,
     _is_identity_h_font,
     _reencode_fragment,
     _scramble_text,
     _scramble_text_font_aware,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers to build minimal CMap streams for testing

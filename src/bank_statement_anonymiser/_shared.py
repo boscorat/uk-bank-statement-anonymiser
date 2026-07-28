@@ -63,7 +63,7 @@ def _parse_tounicode_cmap(stream_bytes: bytes) -> dict[int, str]:
     if stream_bytes.startswith(b"\xfe\xff"):
         try:
             text = stream_bytes.decode("utf-16-be")
-        except Exception:
+        except (UnicodeDecodeError, ValueError):
             text = stream_bytes.decode("latin-1", errors="replace")
     else:
         text = stream_bytes.decode("latin-1", errors="replace")
@@ -165,20 +165,32 @@ _PROTECTED_CHARRUN_PHRASES: frozenset[str] = frozenset(
 )
 
 # ---------------------------------------------------------------------------
+# Numeric ID constants
+# ---------------------------------------------------------------------------
+
+_SORT_CODE_DIGITS: int = 6
+_ACCOUNT_DIGITS: int = 8
+_IBAN_TAIL_DIGITS: int = 14  # _SORT_CODE_DIGITS + _ACCOUNT_DIGITS
+_CARD_FULL_DIGITS: int = 16
+_CARD_MICR_PREFIX_DIGITS: int = 4
+_CARD_MICR_SUFFIX_DIGITS: int = 12
+
+
+# ---------------------------------------------------------------------------
 # Numeric ID patterns
 # ---------------------------------------------------------------------------
 
 # Sort code: 6 digits with hyphens or spaces as separators.
 # Matches: 40-37-28  40 37 28  40-37 28  etc.
 # Does NOT match bare 6-digit runs (too many false positives with phone numbers).
-_SORT_CODE_RE: re.Pattern[str] = re.compile(r"\b(\d{2})[-\s](\d{2})[-\s](\d{2})\b")
+_SORT_CODE_RE: re.Pattern[str] = re.compile(rf"\b(\d{{2}})[-\s](\d{{2}})[-\s](\d{{2}})\b")
 
 # Account number: bare 8-digit run, word-boundary anchored.
-_ACCOUNT_RE: re.Pattern[str] = re.compile(r"\b(\d{8})\b")
+_ACCOUNT_RE: re.Pattern[str] = re.compile(rf"\b(\d{{{_ACCOUNT_DIGITS}}})\b")
 
 # Compound sort-code + account on same token: 6 digits, single space, 8 digits.
 # e.g. "403728 31243535"
-_SORT_ACCT_RE: re.Pattern[str] = re.compile(r"\b(\d{6}) (\d{8})\b")
+_SORT_ACCT_RE: re.Pattern[str] = re.compile(rf"\b(\d{{{_SORT_CODE_DIGITS}}}) (\d{{{_ACCOUNT_DIGITS}}})\b")
 
 # Credit/debit card: 16 digits in 4 groups of 4, separated by spaces.
 # e.g. "3333 2222 1111 0000"
@@ -187,7 +199,7 @@ _CARD_RE: re.Pattern[str] = re.compile(r"\b(\d{4}) (\d{4}) (\d{4}) (\d{4})\b")
 # MICR card format: 4 digits, space, 12 digits (e.g. "5402 225003072770").
 # Used on bank giro credit slips where the card number is printed without
 # internal spaces in the 12-digit portion.
-_CARD_MICR_RE: re.Pattern[str] = re.compile(r"\b(\d{4}) (\d{12})\b")
+_CARD_MICR_RE: re.Pattern[str] = re.compile(rf"\b(\d{{{_CARD_MICR_PREFIX_DIGITS}}}) (\d{{{_CARD_MICR_SUFFIX_DIGITS}}})\b")
 
 # MICR giro line: 16-digit card number followed by MICR tail ending in a
 # single letter check character.
@@ -196,13 +208,13 @@ _CARD_MICR_RE: re.Pattern[str] = re.compile(r"\b(\d{4}) (\d{12})\b")
 # to the trailing check letter (inclusive).
 # The full match (group 0) becomes the numeric_id_map key so the entire
 # fragment text is replaced in one hit.
-_MICR_LINE_RE: re.Pattern[str] = re.compile(r"<(\d{16})(<[^A-Za-z\n]*[A-Za-z])")
+_MICR_LINE_RE: re.Pattern[str] = re.compile(rf"<(\d{{{_CARD_FULL_DIGITS}}})(<[^A-Za-z\n]*[A-Za-z])")
 
 # Full IBAN token: letters/digits prefix followed by exactly 14 trailing digits
 # (sort code 6 + account 8 concatenated).
 # e.g. "VN72JNEB40372831243535" — only the last 14 digits are replaced;
 # the letter/check-digit prefix is preserved verbatim.
-_IBAN_FULL_RE: re.Pattern[str] = re.compile(r"\b[A-Z0-9]*[A-Z](\d{14})\b", re.IGNORECASE)
+_IBAN_FULL_RE: re.Pattern[str] = re.compile(rf"\b[A-Z0-9]*[A-Z](\d{{{_IBAN_TAIL_DIGITS}}})\b", re.IGNORECASE)
 
 # Spaced UK IBAN: 2-letter country code + 2 check digits + 4-letter bank code +
 # 14 sensitive digits rendered in groups of 4-4-4-2 separated by spaces.
@@ -216,7 +228,7 @@ _IBAN_SPACED_RE: re.Pattern[str] = re.compile(
 
 # IBAN tail: exactly 14 consecutive digits (sort code 6 + account 8 concatenated).
 # Fallback for when the IBAN tail appears as a bare digit run without a letter prefix.
-_IBAN_TAIL_RE: re.Pattern[str] = re.compile(r"\b(\d{14})\b")
+_IBAN_TAIL_RE: re.Pattern[str] = re.compile(rf"\b(\d{{{_IBAN_TAIL_DIGITS}}})\b")
 
 # URL pattern: complete URL or domain — used for single-fragment protection.
 # Matches http(s):// or www. prefixed strings, or tokens ending in a known TLD.
@@ -240,6 +252,11 @@ _NUMERIC_ID_PATTERNS: tuple[re.Pattern[str], ...] = (
     _IBAN_FULL_RE,  # compact IBAN token (tail-only replacement)
     _IBAN_TAIL_RE,  # bare 14-digit run fallback
 )
+
+# Verify pattern order for IBAN tail composition logic (Requirement 2.2)
+_SORT_ACCT_IDX = _NUMERIC_ID_PATTERNS.index(_SORT_ACCT_RE)
+_IBAN_FULL_IDX = _NUMERIC_ID_PATTERNS.index(_IBAN_FULL_RE)
+assert _SORT_ACCT_IDX < _IBAN_FULL_IDX, "Pattern order violation: SORT_ACCT must come before IBAN"
 
 # The 26 lowercase and uppercase ASCII letters as tuples.
 _LOWER_LETTERS: tuple[str, ...] = tuple("abcdefghijklmnopqrstuvwxyz")
@@ -517,7 +534,7 @@ def _decode_pdf_operand(obj: pikepdf.Object) -> str:
         return raw[2:].decode("utf-16-be", errors="replace")
     try:
         return raw.decode("latin-1")
-    except Exception:
+    except (UnicodeDecodeError, ValueError):
         return raw.decode("utf-8", errors="replace")
 
 
@@ -555,7 +572,7 @@ def _rewrite_page_content_stream(
 
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
-    except Exception:
+    except (pikepdf.PdfError, ValueError, KeyError):
         return False
 
     # Build a fast lookup: original_bytes -> scrambled_bytes

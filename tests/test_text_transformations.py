@@ -21,11 +21,11 @@ import pytest
 from bank_statement_anonymiser._shared import (
     _LOWER_LETTERS,
     _UPPER_LETTERS,
+    _detect_numeric_ids,
     _make_scramble_map,
+    _reapply_separators,
     _repeat_last_two,
     _strip_numeric_separators,
-    _reapply_separators,
-    _detect_numeric_ids,
 )
 
 
@@ -833,7 +833,7 @@ class TestDetectNumericIds:
         result = _detect_numeric_ids(text)
         
         # Find the two occurrences
-        occurrences = [k for k in result.keys() if k.endswith("28")]
+        occurrences = [k for k in result if k.endswith("28")]
         assert len(occurrences) >= 1, "Sort code not detected"
         
         # If the same key appears, it should have the same value

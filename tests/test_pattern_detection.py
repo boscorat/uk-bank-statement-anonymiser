@@ -23,28 +23,27 @@ from __future__ import annotations
 import pytest
 
 from bank_statement_anonymiser._shared import (
+    _ACCOUNT_RE,
+    _CARD_MICR_RE,
+    _CARD_RE,
     _COMPOUND_TYPE_DESC_RE,
     _DATE_COMPACT_RE,
     _DATE_DAY_MONTH_RE,
     _DATE_RANGE_RE,
     _DATE_RE,
+    _IBAN_FULL_RE,
+    _IBAN_SPACED_RE,
+    _IBAN_TAIL_RE,
+    _MICR_LINE_RE,
     _MONTH_COMPACT_RE,
     _MONTH_NAME_RE,
     _NUMERIC_RE,
     _REF_NUMBER_RE,
-    _URL_RE,
-    _SORT_CODE_RE,
-    _ACCOUNT_RE,
     _SORT_ACCT_RE,
-    _CARD_RE,
-    _CARD_MICR_RE,
-    _MICR_LINE_RE,
-    _IBAN_FULL_RE,
-    _IBAN_SPACED_RE,
-    _IBAN_TAIL_RE,
+    _SORT_CODE_RE,
+    _URL_RE,
 )
 from bank_statement_anonymiser.anonymise import _is_builtin_protected
-
 
 # ============================================================================
 # Date patterns
