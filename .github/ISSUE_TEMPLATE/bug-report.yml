@@ -1,0 +1,89 @@
+name: "Bug report"
+description: "Report an anonymisation failure or unexpected result."
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Precise details and an anonymised statement make it
+        much faster to diagnose and fix anonymisation issues.
+
+  - type: input
+    id: bank_name
+    attributes:
+      label: Bank and account type
+      description: The bank name and account type that is failing to anonymise correctly.
+      placeholder: e.g. HSBC UK — Advance Current Account
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen? (e.g. "All account numbers should have been scrambled.")
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: >
+        What actually happened? Describe the anonymisation failure — which data was
+        left visible, which fields were incorrectly scrambled, or any errors produced.
+      placeholder: Describe what went wrong.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: uk-bank-statement-anonymiser version
+      description: >
+        Run `anonymise-pdf --version` or check your `pyproject.toml` / `requirements.txt`.
+      placeholder: e.g. 0.1.7
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ### Attaching an anonymised statement
+
+        > **You must anonymise your statement before attaching it.**
+        >
+        > Anonymised statements have all text scrambled so that no personal or financial
+        > information is readable, while preserving enough structure to reproduce the issue.
+        >
+        > - Using **openstan**: use the built-in Anonymise PDF tool —
+        >   [openstan anonymisation guide](https://openstan.org/screens/anonymise/)
+        > - Using the **CLI or Python API**: use `anonymise-pdf` —
+        >   see [CONTRIBUTING.md](https://github.com/boscorat/uk-bank-statement-anonymiser/blob/master/CONTRIBUTING.md)
+        >
+        > **Statements that have not been anonymised will be removed without review.**
+
+  - type: textarea
+    id: statement_attachment
+    attributes:
+      label: Anonymised statement
+      description: >
+        Drag and drop your anonymised PDF here, or describe why you are unable to attach one.
+        GitHub accepts PDF attachments directly in this field.
+        Attaching the failing statement is strongly recommended — issues reported without one
+        may take significantly longer to investigate.
+      placeholder: Drag and drop the anonymised PDF here.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: >
+        Anything else that might help — number of pages in the statement, whether it's a
+        downloaded PDF or a scanned copy, OS and Python version, custom config files used, etc.
+    validations:
+      required: false
