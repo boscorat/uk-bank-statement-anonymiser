@@ -199,16 +199,21 @@ def _load_always_anonymise(
     is merged on top — user entries win on key clash.
     """
 
-    def _read_toml(path: Path) -> dict[str, str]:
-        if not path.exists():
+    def _read_toml(path: Path | None) -> dict[str, str]:
+        if path is None or not isinstance(path, Path):
             return {}
-        with path.open("rb") as fh:
-            data = tomllib.load(fh)
-        # Top-level keys only — flat "original" = "replacement" format.
-        return {k: v for k, v in data.items() if isinstance(v, str)}
+        try:
+            if not path.exists():
+                return {}
+            with path.open("rb") as fh:
+                data = tomllib.load(fh)
+            # Top-level keys only — flat "original" = "replacement" format.
+            return {k: v for k, v in data.items() if isinstance(v, str)}
+        except (FileNotFoundError, IsADirectoryError, PermissionError, OSError):
+            return {}
 
     system_rules = _read_toml(system_path)
-    user_rules = _read_toml(user_path) if user_path is not None else {}
+    user_rules = _read_toml(user_path)
 
     # Merge: system first, user overwrites on clash.
     merged = {**system_rules, **user_rules}
@@ -224,15 +229,20 @@ def _load_never_anonymise(
     Both system and user ``exclude`` lists are merged (union).
     """
 
-    def _read_exclude(path: Path) -> list[str]:
-        if not path.exists():
+    def _read_exclude(path: Path | None) -> list[str]:
+        if path is None or not isinstance(path, Path):
             return []
-        with path.open("rb") as fh:
-            data = tomllib.load(fh)
-        return data.get("exclude", [])
+        try:
+            if not path.exists():
+                return []
+            with path.open("rb") as fh:
+                data = tomllib.load(fh)
+            return data.get("exclude", [])
+        except (FileNotFoundError, IsADirectoryError, PermissionError, OSError):
+            return []
 
     system_phrases = _read_exclude(system_path)
-    user_phrases = _read_exclude(user_path) if user_path is not None else []
+    user_phrases = _read_exclude(user_path)
 
     combined = frozenset(_normalise_phrase(p) for p in system_phrases + user_phrases if p.strip())
     return _NeverAnonymiseConfig(phrases=combined)
