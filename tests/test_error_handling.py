@@ -4,10 +4,10 @@ Unit tests for error handling in bank_statement_anonymiser.
 This module tests that the library:
 - Raises FileNotFoundError for missing input PDFs
 - Raises FileNotFoundError for string paths to missing files
-- Does NOT raise for missing user config files (graceful fallback)
+- Raises FileNotFoundError for missing user config files
 - Does NOT raise for invalid/empty TOML user configs (graceful fallback)
 - Does NOT raise for a corrupt content stream (page is skipped)
-- Raises pikepdf.PdfError (or similar) for a completely corrupt PDF
+- Raises ValueError for a completely corrupt PDF
 - Returns a valid Path even when all page text is already protected
 - Does not partially write output when input is missing
 """
@@ -20,7 +20,6 @@ import pikepdf
 import pytest
 
 from bank_statement_anonymiser import anonymise_pdf
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -109,23 +108,23 @@ class TestMissingInputFile:
 
 
 class TestMissingUserConfigs:
-    """Missing or malformed user config files are handled gracefully (no raise)."""
+    """Missing user config files raise FileNotFoundError."""
 
     @pytest.mark.unit
-    def test_missing_always_config_no_raise(self, mock_random_source, tmp_path):
+    def test_missing_always_config_raises(self, mock_random_source, tmp_path):
         src = _make_pdf(tmp_path, _tj("SomeText"))
         nonexistent = tmp_path / "no_always.toml"
         out = tmp_path / "out.pdf"
-        result = anonymise_pdf(src, output_path=out, always_anonymise_path=nonexistent)
-        assert result.exists()
+        with pytest.raises(FileNotFoundError):
+            anonymise_pdf(src, output_path=out, always_anonymise_path=nonexistent)
 
     @pytest.mark.unit
-    def test_missing_never_config_no_raise(self, mock_random_source, tmp_path):
+    def test_missing_never_config_raises(self, mock_random_source, tmp_path):
         src = _make_pdf(tmp_path, _tj("SomeText"))
         nonexistent = tmp_path / "no_never.toml"
         out = tmp_path / "out.pdf"
-        result = anonymise_pdf(src, output_path=out, never_anonymise_path=nonexistent)
-        assert result.exists()
+        with pytest.raises(FileNotFoundError):
+            anonymise_pdf(src, output_path=out, never_anonymise_path=nonexistent)
 
     @pytest.mark.unit
     def test_empty_always_config_no_raise(self, mock_random_source, tmp_path):
@@ -179,7 +178,8 @@ class TestCorruptPdf:
         """A file with garbage bytes raises an exception when opened as PDF."""
         junk = tmp_path / "junk.pdf"
         junk.write_bytes(b"this is not a pdf at all\x00\x01\x02")
-        with pytest.raises(pikepdf.PdfError):
+        out = tmp_path / "out.pdf"
+        with pytest.raises(ValueError):
             anonymise_pdf(junk, output_path=out)
 
     @pytest.mark.unit

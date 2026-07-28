@@ -13,14 +13,9 @@ Tests use mock_random_source fixture to ensure deterministic output.
 
 from __future__ import annotations
 
-import string
-from unittest.mock import patch
-
 import pytest
 
 from bank_statement_anonymiser._shared import (
-    _LOWER_LETTERS,
-    _UPPER_LETTERS,
     _detect_numeric_ids,
     _make_scramble_map,
     _reapply_separators,

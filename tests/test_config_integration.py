@@ -27,7 +27,6 @@ import pytest
 from bank_statement_anonymiser import anonymise_pdf
 from bank_statement_anonymiser._shared import _decode_pdf_operand
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -334,11 +333,10 @@ class TestUserVsSystemConfig:
         assert "DD" in texts, "Bundled system protected phrase 'DD' should not be scrambled"
 
     @pytest.mark.unit
-    def test_absent_user_config_file_graceful(self, mock_random_source, tmp_path):
-        """Pointing always_anonymise_path at a nonexistent file doesn't error."""
+    def test_absent_user_config_file_raises(self, mock_random_source, tmp_path):
+        """Pointing always_anonymise_path at a nonexistent file raises FileNotFoundError."""
         src = _make_pdf_with_text(tmp_path, "SomeText", filename="src.pdf")
         nonexistent = tmp_path / "does_not_exist.toml"
         out = tmp_path / "out.pdf"
-        # Should complete without raising
-        result = anonymise_pdf(src, output_path=out, always_anonymise_path=nonexistent)
-        assert result.exists()
+        with pytest.raises(FileNotFoundError):
+            anonymise_pdf(src, output_path=out, always_anonymise_path=nonexistent)

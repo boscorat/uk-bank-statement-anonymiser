@@ -184,7 +184,7 @@ _CARD_MICR_SUFFIX_DIGITS: int = 12
 # Sort code: 6 digits with hyphens or spaces as separators.
 # Matches: 40-37-28  40 37 28  40-37 28  etc.
 # Does NOT match bare 6-digit runs (too many false positives with phone numbers).
-_SORT_CODE_RE: re.Pattern[str] = re.compile(rf"\b(\d{{2}})[-\s](\d{{2}})[-\s](\d{{2}})\b")
+_SORT_CODE_RE: re.Pattern[str] = re.compile(r"\b(\d{2})[-\s](\d{2})[-\s](\d{2})\b")
 
 # Account number: bare 8-digit run, word-boundary anchored.
 _ACCOUNT_RE: re.Pattern[str] = re.compile(rf"\b(\d{{{_ACCOUNT_DIGITS}}})\b")
@@ -340,8 +340,7 @@ def _reapply_separators(original_display: str, new_digits: str) -> str:
         else:
             result.append(ch)
     # Append any surplus new digits.
-    for ch in digit_iter:
-        result.append(ch)
+    result.extend(digit_iter)
     return "".join(result)
 
 

@@ -20,14 +20,13 @@ import pytest
 from bank_statement_anonymiser._shared import _make_scramble_map
 from bank_statement_anonymiser.anonymise import (
     _AlwaysAnonymiseConfig,
-    _Fragment,
-    _NeverAnonymiseConfig,
     _build_font_maps,
     _build_font_maps_v2,
     _build_scramble_bytes_pairs,
     _distribute_replacement,
+    _Fragment,
+    _NeverAnonymiseConfig,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
