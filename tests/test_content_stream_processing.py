@@ -838,9 +838,16 @@ class TestEdgeCasesContentStream:
         Verify that Tm y-coordinate change exactly at threshold triggers line break.
 
         Given: Two Tj operators where y-coordinate difference = 2.0 (exactly at threshold)
-        When: _collect_fragments() is called
-        Then: Line break should be detected (>= comparison)
+        When: _build_scramble_bytes_pairs() is called with a never_anonymise phrase
+              spanning both fragments
+        Then: Fragments are on separate lines → phrase not matched → scramble pairs built
         """
+        from bank_statement_anonymiser.anonymise import (
+            _AlwaysAnonymiseConfig,
+            _NeverAnonymiseConfig,
+            _make_scramble_map,
+        )
+
         # 750 to 748 = 2.0 units difference (exactly at _TM_Y_THRESHOLD)
         content = (
             b"BT\n/F1 12 Tf\n"
@@ -850,13 +857,22 @@ class TestEdgeCasesContentStream:
             b"(Second) Tj\n"
             b"ET\n"
         )
-        page, _ = _make_page_with_content(content)
-        frags = _collect_fragments(page, {})
-        
-        # Both fragments should be collected (line break is detected but doesn't skip text)
-        decoded = [f.decoded for f in frags]
-        assert "First" in decoded
-        assert "Second" in decoded
+        page, pdf = _make_page_with_content(content)
+        scramble_map = _make_scramble_map()
+
+        # "firstsecond" would match if fragments accumulated on one line
+        never_cfg = _NeverAnonymiseConfig(phrases=frozenset({"firstsecond"}))
+        pairs = _build_scramble_bytes_pairs(
+            page, scramble_map,
+            _AlwaysAnonymiseConfig(replacements={}),
+            never_cfg,
+            font_encodings={}, forward_maps={}, reverse_maps={},
+            bold_fonts=frozenset(),
+        )
+
+        # Threshold met → line break → fragments on separate lines →
+        # "firstsecond" not matched → scramble pairs ARE built
+        assert len(pairs) > 0
 
     @pytest.mark.unit
     def test_tm_threshold_just_below_boundary(self):
@@ -864,9 +880,16 @@ class TestEdgeCasesContentStream:
         Verify that Tm y-coordinate change just below threshold does NOT trigger line break.
 
         Given: Two Tj operators where y-coordinate difference < 2.0
-        When: _collect_fragments() is called
-        Then: Fragments should be accumulated in same line
+        When: _build_scramble_bytes_pairs() is called with a never_anonymise phrase
+              spanning both fragments
+        Then: Fragments accumulate on same line → phrase matched → protected (no pairs)
         """
+        from bank_statement_anonymiser.anonymise import (
+            _AlwaysAnonymiseConfig,
+            _NeverAnonymiseConfig,
+            _make_scramble_map,
+        )
+
         # 750 to 748.5 = 1.5 units difference (below _TM_Y_THRESHOLD)
         content = (
             b"BT\n/F1 12 Tf\n"
@@ -876,12 +899,21 @@ class TestEdgeCasesContentStream:
             b"(Second) Tj\n"
             b"ET\n"
         )
-        page, _ = _make_page_with_content(content)
-        frags = _collect_fragments(page, {})
-        
-        decoded = [f.decoded for f in frags]
-        assert "First" in decoded
-        assert "Second" in decoded
+        page, pdf = _make_page_with_content(content)
+        scramble_map = _make_scramble_map()
+
+        # "firstsecond" matches if fragments accumulate on one line
+        never_cfg = _NeverAnonymiseConfig(phrases=frozenset({"firstsecond"}))
+        pairs = _build_scramble_bytes_pairs(
+            page, scramble_map,
+            _AlwaysAnonymiseConfig(replacements={}),
+            never_cfg,
+            font_encodings={}, forward_maps={}, reverse_maps={},
+            bold_fonts=frozenset(),
+        )
+
+        # Below threshold → same line → "firstsecond" matched → protected → no pairs
+        assert len(pairs) == 0
 
     @pytest.mark.unit
     def test_empty_fragment_list_handling(self):
