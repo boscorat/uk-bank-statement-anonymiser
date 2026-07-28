@@ -107,7 +107,7 @@ jobs:
         id: notes
         run: |
           # Find the previous tag
-          PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | head -2 | tail -1)
+          PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | grep -v "^${GITHUB_REF_NAME}$" | head -1)
           VERSION="${GITHUB_REF_NAME#v}"
 
           echo "Generating notes for $GITHUB_REF_NAME (previous: $PREV_TAG)"
