@@ -888,7 +888,9 @@ def _build_scramble_bytes_pairs(
 
     # Step 1b: build line ranges.
     total_frags = len(indexed_fragments)
-    break_points = sorted(set([0] + line_ends + [total_frags]))
+    # Ensure line_ends are valid (>= 0 and < total_frags) before building break points
+    valid_line_ends = [e for e in line_ends if 0 <= e < total_frags]
+    break_points = sorted(set([0] + valid_line_ends + [total_frags]))
     lines: list[range] = []
     for i in range(len(break_points) - 1):
         start = break_points[i]
