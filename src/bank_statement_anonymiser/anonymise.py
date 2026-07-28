@@ -179,8 +179,14 @@ def _normalise_phrase(text: str) -> str:
     Stripping the trailing colon means config entries like ``"Account number"``
     automatically match PDF fragments rendered as ``"Account number:"`` without
     needing duplicate entries in the config files.
+    
+    Returns empty string if input is None, empty, or only whitespace.
     """
+    if not text or not isinstance(text, str):
+        return ""
     t = text.strip().rstrip(":")
+    if not t:
+        return ""
     return re.sub(r"\s+", "", t).lower()
 
 
@@ -916,6 +922,10 @@ def _build_scramble_bytes_pairs(
                 accumulated += frag_decoded
                 accumulated_spaced = accumulated_spaced + " " + frag_decoded if accumulated_spaced else frag_decoded
                 norm = _normalise_phrase(accumulated)
+
+                # Skip matching if normalized phrase is empty.
+                if not norm:
+                    continue
 
                 # 1. Check always_anonymise first (user wins; already merged).
                 if norm in always_normalised:
