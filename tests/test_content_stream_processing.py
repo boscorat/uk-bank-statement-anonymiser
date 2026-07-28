@@ -844,8 +844,8 @@ class TestEdgeCasesContentStream:
         """
         from bank_statement_anonymiser.anonymise import (
             _AlwaysAnonymiseConfig,
-            _NeverAnonymiseConfig,
             _make_scramble_map,
+            _NeverAnonymiseConfig,
         )
 
         # 750 to 748 = 2.0 units difference (exactly at _TM_Y_THRESHOLD)
@@ -857,7 +857,7 @@ class TestEdgeCasesContentStream:
             b"(Second) Tj\n"
             b"ET\n"
         )
-        page, pdf = _make_page_with_content(content)
+        page, _pdf = _make_page_with_content(content)
         scramble_map = _make_scramble_map()
 
         # "firstsecond" would match if fragments accumulated on one line
@@ -886,8 +886,8 @@ class TestEdgeCasesContentStream:
         """
         from bank_statement_anonymiser.anonymise import (
             _AlwaysAnonymiseConfig,
-            _NeverAnonymiseConfig,
             _make_scramble_map,
+            _NeverAnonymiseConfig,
         )
 
         # 750 to 748.5 = 1.5 units difference (below _TM_Y_THRESHOLD)
@@ -899,7 +899,7 @@ class TestEdgeCasesContentStream:
             b"(Second) Tj\n"
             b"ET\n"
         )
-        page, pdf = _make_page_with_content(content)
+        page, _pdf = _make_page_with_content(content)
         scramble_map = _make_scramble_map()
 
         # "firstsecond" matches if fragments accumulate on one line

@@ -16,7 +16,6 @@ This module tests that anonymise_pdf() leaves the PDF skeleton intact:
 
 from __future__ import annotations
 
-import struct
 from pathlib import Path
 
 import pikepdf

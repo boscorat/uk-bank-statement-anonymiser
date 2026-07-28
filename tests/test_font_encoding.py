@@ -24,8 +24,6 @@ import pikepdf
 import pytest
 
 from bank_statement_anonymiser._shared import (
-    _LOWER_LETTERS,
-    _UPPER_LETTERS,
     _make_scramble_map,
     _parse_tounicode_cmap,
 )

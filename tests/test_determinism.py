@@ -35,7 +35,6 @@ from bank_statement_anonymiser._shared import (
 )
 from bank_statement_anonymiser.anonymise import _scramble_text
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

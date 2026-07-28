@@ -27,7 +27,6 @@ import pytest
 from bank_statement_anonymiser import anonymise_pdf
 from bank_statement_anonymiser._shared import _decode_pdf_operand
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

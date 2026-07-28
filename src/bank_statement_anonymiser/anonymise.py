@@ -109,7 +109,7 @@ from __future__ import annotations
 import re
 import tomllib
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 from typing import NamedTuple
@@ -128,10 +128,8 @@ from bank_statement_anonymiser._shared import (
     _MONTH_NAME_RE,
     _NUMERIC_ID_PATTERNS,
     _NUMERIC_RE,
-    _PROTECTED_CHARRUN_PHRASES,
     _UPPER_LETTERS,
     _URL_RE,
-    _decode_pdf_operand,
     _detect_numeric_ids,
     _make_scramble_map,
     _parse_tounicode_cmap,
