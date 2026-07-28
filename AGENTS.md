@@ -52,7 +52,7 @@ Located in `src/bank_statement_anonymiser/`:
 - **User files** — .gitignored; passed via `always_anonymise_path`, `never_anonymise_path` args.
   - **Always Anonymise:** Flat `"original" = "replacement"` map. User wins on key clash.
   - **Never Anonymise:** `exclude = [...]` list. Union of system + user (all are protected).
-  - **Normalisation:** Phrases are lowercased, internal whitespace collapsed, and trailing colons stripped before matching.
+  - **Normalisation:** Phrases are lowercased, all whitespace removed, and all colons stripped before matching.
 
 **Do NOT commit user config files** — they may contain real account numbers or names.
 
