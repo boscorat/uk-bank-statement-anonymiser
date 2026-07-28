@@ -108,6 +108,7 @@ from __future__ import annotations
 
 import re
 import tomllib
+import warnings
 from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
@@ -573,6 +574,10 @@ def _collect_fragments(
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
     except pikepdf.PdfError:
+        warnings.warn(
+            "Failed to parse content stream for page — text on this page will not be anonymised",
+            stacklevel=2,
+        )
         return []
 
     fragments: list[_Fragment] = []
@@ -907,6 +912,10 @@ def _build_scramble_bytes_pairs(
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
     except pikepdf.PdfError:
+        warnings.warn(
+            "Failed to parse content stream for page — text on this page will not be anonymised",
+            stacklevel=2,
+        )
         return []
 
     # Step 1a: collect (instr_idx, fragment) tuples and line boundaries.

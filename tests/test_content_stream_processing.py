@@ -34,8 +34,8 @@ from bank_statement_anonymiser._shared import (
     _rewrite_page_content_stream,
 )
 from bank_statement_anonymiser.anonymise import (
+    _build_scramble_bytes_pairs,
     _collect_fragments,
-    _Fragment,
 )
 
 # ---------------------------------------------------------------------------
@@ -921,4 +921,96 @@ class TestEdgeCasesContentStream:
         # Should still collect the valid fragment
         decoded = [f.decoded for f in frags]
         assert "Valid" in decoded
+
+
+class TestCollectFragmentsParseFailure:
+    """Tests for _collect_fragments() when content stream parsing fails."""
+
+    @pytest.mark.unit
+    def test_collect_fragments_warns_on_parse_error(self, simple_text_pdf):
+        """Should emit UserWarning when pikepdf.parse_content_stream raises PdfError."""
+        import warnings
+        from unittest.mock import patch
+
+        import pikepdf
+
+        pdf = pikepdf.open(str(simple_text_pdf))
+        page = pdf.pages[0]
+
+        with (
+            patch(
+                "pikepdf.parse_content_stream",
+                side_effect=pikepdf.PdfError("mocked parse failure"),
+            ),
+            warnings.catch_warnings(record=True) as w,
+        ):
+            warnings.simplefilter("always")
+            result = _collect_fragments(page, {})
+
+        assert result == []
+        assert len(w) == 1
+        assert "Failed to parse content stream" in str(w[0].message)
+
+    @pytest.mark.unit
+    def test_collect_fragments_returns_empty_list_on_error(self, simple_text_pdf):
+        """Should return an empty list (not raise) when content stream is unparseable."""
+        from unittest.mock import patch
+
+        import pikepdf
+
+        pdf = pikepdf.open(str(simple_text_pdf))
+        page = pdf.pages[0]
+
+        with patch(
+            "pikepdf.parse_content_stream",
+            side_effect=pikepdf.PdfError("mocked"),
+        ):
+            result = _collect_fragments(page, {})
+
+        assert result == []
+
+
+class TestBuildScrambleBytesPairsParseFailure:
+    """Tests for _build_scramble_bytes_pairs() when content stream parsing fails."""
+
+    @pytest.mark.unit
+    def test_warns_on_parse_error(self, simple_text_pdf):
+        """Should emit UserWarning when pikepdf.parse_content_stream raises PdfError."""
+        import warnings
+        from unittest.mock import patch
+
+        import pikepdf
+
+        from bank_statement_anonymiser.anonymise import (
+            _AlwaysAnonymiseConfig,
+            _make_scramble_map,
+            _NeverAnonymiseConfig,
+        )
+
+        pdf = pikepdf.open(str(simple_text_pdf))
+        page = pdf.pages[0]
+        scramble_map = _make_scramble_map()
+
+        with (
+            patch(
+                "pikepdf.parse_content_stream",
+                side_effect=pikepdf.PdfError("mocked parse failure"),
+            ),
+            warnings.catch_warnings(record=True) as w,
+        ):
+            warnings.simplefilter("always")
+            result = _build_scramble_bytes_pairs(
+                page,
+                scramble_map,
+                _AlwaysAnonymiseConfig(replacements={}),
+                _NeverAnonymiseConfig(phrases=frozenset()),
+                font_encodings={},
+                forward_maps={},
+                reverse_maps={},
+                bold_fonts=frozenset(),
+            )
+
+        assert result == []
+        assert len(w) == 1
+        assert "Failed to parse content stream" in str(w[0].message)
 
