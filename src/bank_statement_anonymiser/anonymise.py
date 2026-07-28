@@ -282,7 +282,7 @@ def _decode_raw_bytes(
         return "".join(fwd.get(b, "") for b in raw)
     try:
         return raw.decode("latin-1")
-    except Exception:
+    except UnicodeDecodeError:
         return raw.decode("utf-8", errors="replace")
 
 
@@ -333,7 +333,7 @@ def _decode_raw_bytes_v2(
                 # Fallback: try Latin-1 or UTF-8
                 try:
                     chars.append(bytes([b]).decode("latin-1"))
-                except Exception:
+                except UnicodeDecodeError:
                     chars.append(bytes([b]).decode("utf-8", errors="replace"))
         return "".join(chars)
 
@@ -521,7 +521,7 @@ def _collect_fragments(
 
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
-    except Exception:
+    except pikepdf.PdfError:
         return []
 
     fragments: list[_Fragment] = []
@@ -533,7 +533,7 @@ def _collect_fragments(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except Exception:
+            except (TypeError, AttributeError):
                 current_font = ""
 
         elif op == "Tj" and operands:
@@ -542,7 +542,7 @@ def _collect_fragments(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
         elif op == "TJ" and operands:
@@ -554,7 +554,7 @@ def _collect_fragments(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
     return fragments
@@ -808,7 +808,7 @@ def _build_scramble_bytes_pairs(
 
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
-    except Exception:
+    except pikepdf.PdfError:
         return []
 
     # Step 1a: collect (instr_idx, fragment) tuples and line boundaries.
@@ -823,7 +823,7 @@ def _build_scramble_bytes_pairs(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except Exception:
+            except (TypeError, AttributeError):
                 current_font = ""
 
         elif op in _LINE_BREAK_OPS:
@@ -834,10 +834,10 @@ def _build_scramble_bytes_pairs(
             # Only treat as a line break when y changes significantly.
             try:
                 ty = float(str(operands[5]))
-                if _last_tm_y is None or abs(ty - _last_tm_y) > _TM_Y_THRESHOLD:
+                if _last_tm_y is None or abs(ty - _last_tm_y) >= _TM_Y_THRESHOLD:
                     line_ends.append(len(indexed_fragments))
                     _last_tm_y = ty
-            except Exception:
+            except (ValueError, TypeError):
                 line_ends.append(len(indexed_fragments))
 
         elif op == "Tj" and operands:
@@ -846,7 +846,7 @@ def _build_scramble_bytes_pairs(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
         elif op == "TJ" and operands:
@@ -858,7 +858,7 @@ def _build_scramble_bytes_pairs(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
     if not indexed_fragments:
@@ -1103,7 +1103,7 @@ def _build_font_maps(
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except Exception:
+    except (AttributeError, KeyError, TypeError):
         return forward_maps, reverse_maps, frozenset()
 
     for fname in font_dict.keys():
@@ -1127,7 +1127,7 @@ def _build_font_maps(
                     rev[uc] = gb
             forward_maps[str(fname)] = fwd
             reverse_maps[str(fname)] = rev
-        except Exception:
+        except (AttributeError, KeyError, TypeError):
             continue
 
     return forward_maps, reverse_maps, frozenset(bold_fonts)
@@ -1154,7 +1154,7 @@ def _build_font_maps_v2(
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except Exception:
+    except (AttributeError, KeyError, TypeError):
         return font_encodings, reverse_maps, frozenset()
 
     for fname in font_dict.keys():
@@ -1189,7 +1189,7 @@ def _build_font_maps_v2(
                 is_identity_h=is_identity_h,
             )
             reverse_maps[fname_str] = rev
-        except Exception:
+        except (AttributeError, KeyError, TypeError):
             continue
 
     return font_encodings, reverse_maps, frozenset(bold_fonts)
@@ -1312,11 +1312,11 @@ def anonymise_pdf(
                 for orig_b, repl_b in pairs[:20]:  # cap at 20 to avoid flooding
                     try:
                         orig_s = orig_b.decode("latin-1")
-                    except Exception:
+                    except UnicodeDecodeError:
                         orig_s = repr(orig_b)
                     try:
                         repl_s = repl_b.decode("latin-1")
-                    except Exception:
+                    except UnicodeDecodeError:
                         repl_s = repr(repl_b)
                     print(f"[DEBUG]   pair: {orig_s!r} -> {repl_s!r}")
                 if len(pairs) > 20:
