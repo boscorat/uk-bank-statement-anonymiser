@@ -34,6 +34,9 @@ dependencies = [
     "pikepdf>=10.3.0,<11.0.0",
 ]
 
+[project.scripts]
+anonymise-pdf = "bank_statement_anonymiser.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/boscorat/uk-bank-statement-anonymiser"
 Repository = "https://github.com/boscorat/uk-bank-statement-anonymiser"

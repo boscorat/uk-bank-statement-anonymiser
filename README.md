@@ -117,6 +117,24 @@ def anonymise_pdf(
 
 All processing happens locally via [pikepdf](https://github.com/pikepdf/pikepdf). No network requests, no accounts, no data collection.
 
+## CLI usage
+
+```bash
+pip install uk-bank-statement-anonymiser
+anonymise-pdf statement.pdf
+```
+
+```bash
+anonymise-pdf statement.pdf -o output.pdf
+anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
+```
+
+## Contributing
+
+The most valuable contribution is testing the anonymiser against real bank statements from your own accounts. Your PDFs never leave your machine — you only submit a review report.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+
 ## Development
 
 ```bash
