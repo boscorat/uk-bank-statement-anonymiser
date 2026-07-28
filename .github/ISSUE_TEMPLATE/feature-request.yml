@@ -1,0 +1,46 @@
+name: "Feature request"
+description: "Suggest a new feature or improvement."
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Please describe what you'd like and why it would be useful.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of the feature you'd like.
+      placeholder: e.g. Support anonymisation of Lloyds Bank statements.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: >
+        Why is this feature needed? What problem does it solve?
+        If requesting new bank support, describe the bank and account type.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: >
+        Have you tried any workarounds or alternative approaches?
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: >
+        Any other details — links to bank documentation, sample PDF structure, etc.
+    validations:
+      required: false

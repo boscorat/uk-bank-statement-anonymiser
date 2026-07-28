@@ -14,7 +14,7 @@ keywords = [
     "redact", "pii",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
     "Intended Audience :: Financial and Insurance Industry",
@@ -53,6 +53,7 @@ module-name = "bank_statement_anonymiser"
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
+    "pytest-cov>=6.0",
     "ruff>=0.14.9",
 ]
 
