@@ -53,7 +53,26 @@ Phase 2 — Build bytes pairs:
     * Scramblable → ``(original_bytes, scrambled_bytes)`` pair.
 
 Phase 3 — Rewrite content stream (unchanged):
-    Dict lookup of original_bytes → replacement_bytes.
+    Dict lookup of original_bytes -> replacement_bytes.
+
+Algorithm Decisions
+-------------------
+1. **Tm Y-Threshold (2.0 units):** Baselines and small vertical adjustments within
+   the same visual line can vary by < 2.0 units (e.g., superscripts, subscripts).
+   The 2.0-unit threshold prevents false line breaks on same-line repositioning.
+
+   Note: Banks like TSB may render each word in its own BT/Tm/ET block at the same
+   Y-coordinate. The threshold allows these to accumulate for multi-word matching.
+
+2. **Numeric ID Pattern Order:** Patterns are processed in priority order defined
+   by _NUMERIC_ID_PATTERNS in _shared.py. SORT_ACCT_RE must come before IBAN_FULL_RE
+   so that 6-digit sort codes and 8-digit accounts are cached before IBAN 14-digit
+   tails are composed (ensuring consistency: IBAN tail = cached_sort + cached_account).
+
+3. **Font Encoding Fallback:** If a glyph/character is not in a font's reverse map
+   (_reencode_fragment), it cannot be re-encoded. This happens when custom ToUnicode
+   CMaps map bytes to characters not in the font's baseline Latin-1 set. These
+   fragments are protected (marked "protected" or left unchanged).
 
 Config files
 ------------
@@ -89,6 +108,7 @@ from __future__ import annotations
 
 import re
 import tomllib
+import warnings
 from dataclasses import dataclass, field
 from importlib import resources
 from pathlib import Path
@@ -135,7 +155,7 @@ _LINE_BREAK_OPS: frozenset[str] = frozenset({"Td", "TD", "T*"})
 
 # Threshold (in PDF user units, roughly points) below which a Tm y-coordinate
 # change is treated as the same visual line (e.g. baseline adjustment).
-_TM_Y_THRESHOLD: float = 2.0
+_TM_Y_THRESHOLD_UNITS: float = 2.0
 
 
 # ---------------------------------------------------------------------------
@@ -174,13 +194,19 @@ class _NeverAnonymiseConfig:
 
 
 def _normalise_phrase(text: str) -> str:
-    """Lowercase, strip trailing colon, and strip all whitespace.
+    """Lowercase, remove all colons, and strip all whitespace.
 
-    Stripping the trailing colon means config entries like ``"Account number"``
-    automatically match PDF fragments rendered as ``"Account number:"`` without
-    needing duplicate entries in the config files.
+    Removing all colons means config entries like ``"Account number"``
+    automatically match PDF fragments rendered as ``"Account number:"`` or
+    ``"Account : Number"`` without needing duplicate entries.
+    
+    Returns empty string if input is None, empty, or only whitespace.
     """
-    t = text.strip().rstrip(":")
+    if not text or not isinstance(text, str):
+        return ""
+    t = text.strip().replace(":", "")
+    if not t:
+        return ""
     return re.sub(r"\s+", "", t).lower()
 
 
@@ -195,20 +221,29 @@ def _load_always_anonymise(
 ) -> _AlwaysAnonymiseConfig:
     """Load and merge always-anonymise replacement rules.
 
-    The system file is always loaded.  The user file (if provided and exists)
+    The system file is always loaded.  The user file (if provided)
     is merged on top — user entries win on key clash.
     """
 
-    def _read_toml(path: Path) -> dict[str, str]:
-        if not path.exists():
+    def _read_toml(path: Path | None, is_user: bool = False) -> dict[str, str]:
+        if path is None:
             return {}
-        with path.open("rb") as fh:
-            data = tomllib.load(fh)
-        # Top-level keys only — flat "original" = "replacement" format.
-        return {k: v for k, v in data.items() if isinstance(v, str)}
+        if not path.exists():
+            if is_user:
+                raise FileNotFoundError(f"User always_anonymise config not found: {path}")
+            return {}
+        try:
+            with path.open("rb") as fh:
+                data = tomllib.load(fh)
+            # Top-level keys only — flat "original" = "replacement" format.
+            return {k: v for k, v in data.items() if isinstance(v, str)}
+        except (IsADirectoryError, PermissionError, OSError) as e:
+            if is_user:
+                raise ValueError(f"Failed to load user config '{path}': {e}") from e
+            return {}
 
     system_rules = _read_toml(system_path)
-    user_rules = _read_toml(user_path) if user_path is not None else {}
+    user_rules = _read_toml(user_path, is_user=True)
 
     # Merge: system first, user overwrites on clash.
     merged = {**system_rules, **user_rules}
@@ -224,17 +259,29 @@ def _load_never_anonymise(
     Both system and user ``exclude`` lists are merged (union).
     """
 
-    def _read_exclude(path: Path) -> list[str]:
-        if not path.exists():
+    def _read_exclude(path: Path | None, is_user: bool = False) -> list[str]:
+        if path is None:
             return []
-        with path.open("rb") as fh:
-            data = tomllib.load(fh)
-        return data.get("exclude", [])
+        if not path.exists():
+            if is_user:
+                raise FileNotFoundError(f"User never_anonymise config not found: {path}")
+            return []
+        try:
+            with path.open("rb") as fh:
+                data = tomllib.load(fh)
+            raw = data.get("exclude", [])
+            if not isinstance(raw, list):
+                return []
+            return [str(item) for item in raw]
+        except (IsADirectoryError, PermissionError, OSError) as e:
+            if is_user:
+                raise ValueError(f"Failed to load user config '{path}': {e}") from e
+            return []
 
     system_phrases = _read_exclude(system_path)
-    user_phrases = _read_exclude(user_path) if user_path is not None else []
+    user_phrases = _read_exclude(user_path, is_user=True)
 
-    combined = frozenset(_normalise_phrase(p) for p in system_phrases + user_phrases if p.strip())
+    combined = frozenset(p for p in (_normalise_phrase(phrase) for phrase in system_phrases + user_phrases) if p)
     return _NeverAnonymiseConfig(phrases=combined)
 
 
@@ -282,13 +329,13 @@ def _decode_raw_bytes(
         return "".join(fwd.get(b, "") for b in raw)
     try:
         return raw.decode("latin-1")
-    except Exception:
+    except UnicodeDecodeError:
         return raw.decode("utf-8", errors="replace")
 
 
 def _decode_raw_bytes_v2(
     raw: bytes,
-    font_encoding: "_FontEncoding",
+    font_encoding: _FontEncoding,
 ) -> str:
     """Decode raw PDF content-stream bytes using font encoding metadata.
 
@@ -333,16 +380,17 @@ def _decode_raw_bytes_v2(
                 # Fallback: try Latin-1 or UTF-8
                 try:
                     chars.append(bytes([b]).decode("latin-1"))
-                except Exception:
+                except UnicodeDecodeError:
                     chars.append(bytes([b]).decode("utf-8", errors="replace"))
         return "".join(chars)
 
 
-def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
+def _is_identity_h_font(f: pikepdf.Dictionary) -> bool:
     """Detect if a PDF font uses Identity-H encoding (CID-based, multi-byte).
 
     A font is considered Identity-H if its /Encoding entry is the name
-    '/Identity-H' (case-insensitive check on the string representation).
+    '/Identity-H' (handles both hyphen and underscore variants).
+    Returns False if font dictionary is None, malformed, or lacks encoding.
 
     Args:
         f: The font dictionary from /Resources /Font.
@@ -350,18 +398,24 @@ def _is_identity_h_font(f: "pikepdf.Dictionary") -> bool:
     Returns:
         True if the font uses Identity-H encoding, False otherwise.
     """
-    encoding = f.get("/Encoding")
-    if encoding is None:
+    if f is None:
         return False
-    encoding_str = str(encoding)
-    return encoding_str == "/Identity-H" or encoding_str == "Identity-H"
+    try:
+        encoding = f.get("/Encoding")
+        if encoding is None:
+            return False
+        encoding_str = str(encoding)
+        # Handle both /Identity-H and /Identity_H (pikepdf uses underscore)
+        return encoding_str in ("/Identity-H", "Identity-H", "/Identity_H", "Identity_H")
+    except (AttributeError, TypeError, KeyError):
+        return False
 
 
 def _decode_raw_bytes_safe(
     raw: bytes,
     font: str,
     forward_maps: dict[str, dict[int, str]],
-    font_encodings: dict[str, "_FontEncoding"] | None = None,
+    font_encodings: dict[str, _FontEncoding] | None = None,
 ) -> str:
     """Route to appropriate decoder based on available encoding metadata.
     
@@ -463,9 +517,7 @@ def _is_builtin_protected(text: str) -> bool:
         return True
     if _DATE_RANGE_RE.fullmatch(stripped):
         return True
-    if _URL_RE.fullmatch(stripped):
-        return True
-    return False
+    return bool(_URL_RE.fullmatch(stripped))
 
 
 # ---------------------------------------------------------------------------
@@ -498,7 +550,7 @@ class _FragmentDisposition:
 def _collect_fragments(
     pike_page: pikepdf.Page,
     forward_maps: dict[str, dict[int, str]],
-    font_encodings: dict[str, "_FontEncoding"] | None = None,
+    font_encodings: dict[str, _FontEncoding] | None = None,
 ) -> list[_Fragment]:
     """Parse *pike_page*'s content stream and return a flat list of fragments.
 
@@ -521,7 +573,11 @@ def _collect_fragments(
 
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
-    except Exception:
+    except pikepdf.PdfError:
+        warnings.warn(
+            "Failed to parse content stream for page — text on this page will not be anonymised",
+            stacklevel=2,
+        )
         return []
 
     fragments: list[_Fragment] = []
@@ -533,7 +589,7 @@ def _collect_fragments(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except Exception:
+            except (TypeError, AttributeError):
                 current_font = ""
 
         elif op == "Tj" and operands:
@@ -542,7 +598,7 @@ def _collect_fragments(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
         elif op == "TJ" and operands:
@@ -554,7 +610,7 @@ def _collect_fragments(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
     return fragments
@@ -566,7 +622,7 @@ def _collect_fragments(
 
 
 def _extract_user_numeric_overrides(
-    always_cfg: "_AlwaysAnonymiseConfig",
+    always_cfg: _AlwaysAnonymiseConfig,
 ) -> dict[str, str]:
     """Extract numeric-ID overrides from *always_cfg* keyed on canonical raw digits.
 
@@ -612,7 +668,7 @@ def _reencode_fragment(
     text: str,
     font: str,
     reverse_maps: dict[str, dict[str, int]],
-    font_encodings: dict[str, "_FontEncoding"] | None = None,
+    font_encodings: dict[str, _FontEncoding] | None = None,
 ) -> bytes | None:
     """Re-encode *text* back to bytes using *font*'s encoding.
 
@@ -760,12 +816,59 @@ def _scramble_text_font_aware(
 # ---------------------------------------------------------------------------
 
 
+def _find_match_at_position(
+    pos: int,
+    n: int,
+    frags_in_line: list[_Fragment],
+    always_normalised: dict[str, str],
+    never_phrases: frozenset[str],
+    numeric_id_map: dict[str, str],
+) -> tuple[str, str | None, int] | None:
+    """Find a match starting at position *pos* in *frags_in_line*.
+
+    Checks against always_anonymise, never_anonymise, numeric IDs, and
+    built-in patterns.
+
+    Returns:
+        Tuple of (disposition_kind, replacement_text, end_index) or None if no match.
+    """
+    accumulated = ""
+    accumulated_spaced = ""
+    for end in range(pos, n):
+        frag_decoded = frags_in_line[end].decoded
+        accumulated += frag_decoded
+        accumulated_spaced = (accumulated_spaced + " " + frag_decoded) if accumulated_spaced else frag_decoded
+        norm = _normalise_phrase(accumulated)
+
+        if not norm:
+            continue
+
+        # 1. Always anonymise.
+        if norm in always_normalised:
+            return "always", always_normalised[norm], end
+
+        # 2. Never anonymise.
+        if norm in never_phrases:
+            return "protected", None, end
+
+        # 3. Numeric IDs.
+        replacement = _lookup_numeric_id(accumulated_spaced, accumulated, numeric_id_map)
+        if replacement is not None:
+            return "always", replacement, end
+
+        # 4. Built-in patterns (only at full accumulation).
+        if _is_builtin_protected(accumulated):
+            return "protected", None, end
+
+    return None
+
+
 def _build_scramble_bytes_pairs(
     pike_page: pikepdf.Page,
     scramble_map: dict[int, int],
     always_cfg: _AlwaysAnonymiseConfig,
     never_cfg: _NeverAnonymiseConfig,
-    font_encodings: dict[str, "_FontEncoding"],
+    font_encodings: dict[str, _FontEncoding],
     forward_maps: dict[str, dict[int, str]],
     reverse_maps: dict[str, dict[str, int]],
     bold_fonts: frozenset[str],
@@ -808,7 +911,11 @@ def _build_scramble_bytes_pairs(
 
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
-    except Exception:
+    except pikepdf.PdfError:
+        warnings.warn(
+            "Failed to parse content stream for page — text on this page will not be anonymised",
+            stacklevel=2,
+        )
         return []
 
     # Step 1a: collect (instr_idx, fragment) tuples and line boundaries.
@@ -823,7 +930,7 @@ def _build_scramble_bytes_pairs(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except Exception:
+            except (TypeError, AttributeError):
                 current_font = ""
 
         elif op in _LINE_BREAK_OPS:
@@ -834,10 +941,10 @@ def _build_scramble_bytes_pairs(
             # Only treat as a line break when y changes significantly.
             try:
                 ty = float(str(operands[5]))
-                if _last_tm_y is None or abs(ty - _last_tm_y) > _TM_Y_THRESHOLD:
+                if _last_tm_y is None or abs(ty - _last_tm_y) >= _TM_Y_THRESHOLD_UNITS:
                     line_ends.append(len(indexed_fragments))
                     _last_tm_y = ty
-            except Exception:
+            except (ValueError, TypeError):
                 line_ends.append(len(indexed_fragments))
 
         elif op == "Tj" and operands:
@@ -846,7 +953,7 @@ def _build_scramble_bytes_pairs(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
         elif op == "TJ" and operands:
@@ -858,7 +965,7 @@ def _build_scramble_bytes_pairs(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except Exception:
+            except (TypeError, AttributeError):
                 pass
 
     if not indexed_fragments:
@@ -866,7 +973,9 @@ def _build_scramble_bytes_pairs(
 
     # Step 1b: build line ranges.
     total_frags = len(indexed_fragments)
-    break_points = sorted(set([0] + line_ends + [total_frags]))
+    # Ensure line_ends are valid (>= 0 and < total_frags) before building break points
+    valid_line_ends = [e for e in line_ends if 0 <= e < total_frags]
+    break_points = sorted(set([0] + valid_line_ends + [total_frags]))
     lines: list[range] = []
     for i in range(len(break_points) - 1):
         start = break_points[i]
@@ -884,94 +993,39 @@ def _build_scramble_bytes_pairs(
     for line_range in lines:
         frags_in_line = [indexed_fragments[i][1] for i in line_range]
         n = len(frags_in_line)
-        matched: set[int] = set()
+        matched_indices: set[int] = set()
 
         pos = 0
         while pos < n:
-            if pos in matched:
+            if pos in matched_indices:
                 pos += 1
                 continue
 
-            found = False
-            accumulated = ""  # no separator — for always/never/builtin checks
-            accumulated_spaced = ""  # space-joined — mirrors pre-pass all_text for numeric ID lookup
-            for end in range(pos, n):
-                frag_decoded = frags_in_line[end].decoded
-                accumulated += frag_decoded
-                accumulated_spaced = accumulated_spaced + " " + frag_decoded if accumulated_spaced else frag_decoded
-                norm = _normalise_phrase(accumulated)
-
-                # 1. Check always_anonymise first (user wins; already merged).
-                if norm in always_normalised:
-                    replacement = always_normalised[norm]
-                    for i in range(pos, end + 1):
-                        frag_idx = line_range[i]
-                        dispositions[frag_idx] = "always"
-                        matched.add(i)
+            match = _find_match_at_position(
+                pos, n, frags_in_line, always_normalised, never_cfg.phrases, numeric_id_map
+            )
+            if match:
+                kind, replacement, end = match
+                for i in range(pos, end + 1):
+                    frag_idx = line_range[i]
+                    dispositions[frag_idx] = kind
+                    matched_indices.add(i)
+                if kind == "always" and replacement is not None:
                     _distribute_replacement(
                         replacement,
                         [line_range[i] for i in range(pos, end + 1)],
                         frags_in_line[pos : end + 1],
                         always_replacements,
                     )
-                    pos = end + 1
-                    found = True
-                    break
-
-                # 2. Check never_anonymise phrases.
-                if norm in never_cfg.phrases:
-                    for i in range(pos, end + 1):
-                        frag_idx = line_range[i]
-                        dispositions[frag_idx] = "protected"
-                        matched.add(i)
-                    pos = end + 1
-                    found = True
-                    break
-
-                # 3. Check numeric ID map — must come before built-in protected
-                #    because _NUMERIC_RE would otherwise protect bare digit strings
-                #    (e.g. 8-digit account numbers) before we can replace them.
-                #    Check both the space-joined form (matches compound tokens
-                #    like "403728 31243535") and the concatenated form (matches
-                #    single-fragment tokens like "40-37-28").
-                #    Also try stripped variants to handle fragments with leading/
-                #    trailing whitespace (e.g. "                 5402 2250 0307 2770").
-                replacement = _lookup_numeric_id(accumulated_spaced, accumulated, numeric_id_map)
-                if replacement is not None:
-                    for i in range(pos, end + 1):
-                        frag_idx = line_range[i]
-                        dispositions[frag_idx] = "always"
-                        matched.add(i)
-                    _distribute_replacement(
-                        replacement,
-                        [line_range[i] for i in range(pos, end + 1)],
-                        frags_in_line[pos : end + 1],
-                        always_replacements,
-                    )
-                    pos = end + 1
-                    found = True
-                    break
-
-                # 4. Check built-in protected patterns.
-                if _is_builtin_protected(accumulated):
-                    for i in range(pos, end + 1):
-                        frag_idx = line_range[i]
-                        dispositions[frag_idx] = "protected"
-                        matched.add(i)
-                    pos = end + 1
-                    found = True
-                    break
-
-            if not found:
+                pos = end + 1
+            else:
                 pos += 1
 
     # Step 1d: assign default (scramble) to all unmatched fragments.
     for i in range(total_frags):
         if dispositions[i] is None:
             _, frag = indexed_fragments[i]
-            if frag.font in bold_fonts:
-                dispositions[i] = "protected"
-            elif _is_builtin_protected(frag.decoded):
+            if frag.font in bold_fonts or _is_builtin_protected(frag.decoded):
                 dispositions[i] = "protected"
             else:
                 dispositions[i] = "scramble"
@@ -1103,10 +1157,10 @@ def _build_font_maps(
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except Exception:
+    except (AttributeError, KeyError, TypeError):
         return forward_maps, reverse_maps, frozenset()
 
-    for fname in font_dict.keys():
+    for fname in font_dict:
         try:
             f = font_dict[fname]
 
@@ -1127,7 +1181,7 @@ def _build_font_maps(
                     rev[uc] = gb
             forward_maps[str(fname)] = fwd
             reverse_maps[str(fname)] = rev
-        except Exception:
+        except (AttributeError, KeyError, TypeError):
             continue
 
     return forward_maps, reverse_maps, frozenset(bold_fonts)
@@ -1135,7 +1189,7 @@ def _build_font_maps(
 
 def _build_font_maps_v2(
     pike_page: pikepdf.Page,
-) -> tuple[dict[str, "_FontEncoding"], dict[str, dict[str, int]], frozenset[str]]:
+) -> tuple[dict[str, _FontEncoding], dict[str, dict[str, int]], frozenset[str]]:
     """Build per-font font encodings, reverse maps, and bold font name set.
 
     Returns font encoding metadata (forward map + Identity-H flag), reverse maps
@@ -1147,17 +1201,17 @@ def _build_font_maps_v2(
         - reverse_maps: font_name -> {unicode_char -> cid_or_byte}
         - bold_fonts: set of font resource names (e.g. '/F2') that are bold
     """
-    font_encodings: dict[str, "_FontEncoding"] = {}
+    font_encodings: dict[str, _FontEncoding] = {}
     reverse_maps: dict[str, dict[str, int]] = {}
     bold_fonts: set[str] = set()
 
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except Exception:
+    except (AttributeError, KeyError, TypeError):
         return font_encodings, reverse_maps, frozenset()
 
-    for fname in font_dict.keys():
+    for fname in font_dict:
         try:
             f = font_dict[fname]
 
@@ -1189,7 +1243,7 @@ def _build_font_maps_v2(
                 is_identity_h=is_identity_h,
             )
             reverse_maps[fname_str] = rev
-        except Exception:
+        except (AttributeError, KeyError, TypeError):
             continue
 
     return font_encodings, reverse_maps, frozenset(bold_fonts)
@@ -1260,7 +1314,11 @@ def anonymise_pdf(
     scramble_map = _make_scramble_map()
     total_pairs = 0
 
-    pike_doc = pikepdf.open(str(input_path))
+    try:
+        pike_doc = pikepdf.open(str(input_path))
+    except (FileNotFoundError, pikepdf.PdfError) as e:
+        raise ValueError(f"Failed to open PDF '{input_path}': {e}") from e
+
     try:
         # ------------------------------------------------------------------
         # Document-level pre-pass: collect all fragment text and detect
@@ -1312,11 +1370,11 @@ def anonymise_pdf(
                 for orig_b, repl_b in pairs[:20]:  # cap at 20 to avoid flooding
                     try:
                         orig_s = orig_b.decode("latin-1")
-                    except Exception:
+                    except UnicodeDecodeError:
                         orig_s = repr(orig_b)
                     try:
                         repl_s = repl_b.decode("latin-1")
-                    except Exception:
+                    except UnicodeDecodeError:
                         repl_s = repr(repl_b)
                     print(f"[DEBUG]   pair: {orig_s!r} -> {repl_s!r}")
                 if len(pairs) > 20:
@@ -1327,6 +1385,11 @@ def anonymise_pdf(
                 total_pairs += len(pairs)
 
         pike_doc.save(str(output_path), compress_streams=True)
+    except Exception as e:
+        # Avoid double-wrapping if already ValueError from open
+        if isinstance(e, ValueError) and "Failed to open PDF" in str(e):
+            raise
+        raise ValueError(f"Failed to anonymise or save PDF: {e}") from e
     finally:
         pike_doc.close()
 

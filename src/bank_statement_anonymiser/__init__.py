@@ -12,4 +12,4 @@ from importlib.metadata import version
 from bank_statement_anonymiser.anonymise import anonymise_pdf
 
 __version__ = version("uk-bank-statement-anonymiser")
-__all__ = ["anonymise_pdf", "__version__"]
+__all__ = ["__version__", "anonymise_pdf"]

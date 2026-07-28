@@ -24,7 +24,6 @@ import pytest
 
 from bank_statement_anonymiser import anonymise_pdf
 
-
 # ---------------------------------------------------------------------------
 # Helpers: build synthetic PDF fixtures inline
 # ---------------------------------------------------------------------------
@@ -144,7 +143,7 @@ def _get_font_names(page_obj: pikepdf.Object) -> set[str]:
     try:
         res = page_obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary())
-        return set(str(k) for k in font_dict.keys())
+        return {str(k) for k in font_dict}
     except Exception:
         return set()
 
@@ -154,7 +153,7 @@ def _get_xobject_names(page_obj: pikepdf.Object) -> set[str]:
     try:
         res = page_obj.get("/Resources", pikepdf.Dictionary())
         xobj = res.get("/XObject", pikepdf.Dictionary())
-        return set(str(k) for k in xobj.keys())
+        return {str(k) for k in xobj}
     except Exception:
         return set()
 

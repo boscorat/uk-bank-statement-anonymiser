@@ -21,11 +21,11 @@ import pytest
 from bank_statement_anonymiser._shared import (
     _LOWER_LETTERS,
     _UPPER_LETTERS,
+    _detect_numeric_ids,
     _make_scramble_map,
+    _reapply_separators,
     _repeat_last_two,
     _strip_numeric_separators,
-    _reapply_separators,
-    _detect_numeric_ids,
 )
 
 
@@ -833,7 +833,7 @@ class TestDetectNumericIds:
         result = _detect_numeric_ids(text)
         
         # Find the two occurrences
-        occurrences = [k for k in result.keys() if k.endswith("28")]
+        occurrences = [k for k in result if k.endswith("28")]
         assert len(occurrences) >= 1, "Sort code not detected"
         
         # If the same key appears, it should have the same value
@@ -946,8 +946,115 @@ class TestDetectNumericIds:
         
         # Format should be XXX-XX-XX (6 digits with hyphens)
         assert replacement.count("-") == 2, (
-            f"Format not preserved: {replacement}"
+             f"Format not preserved: {replacement}"
         )
         assert len(replacement) == 8, (  # 6 digits + 2 hyphens
-            f"Length mismatch: {replacement}"
+             f"Length mismatch: {replacement}"
         )
+
+
+class TestRepeatLastTwoEdgeCases:
+    """Edge case tests for _repeat_last_two numeric ID tiling."""
+
+    @pytest.mark.unit
+    def test_repeat_last_two_empty_string(self):
+        """
+        Verify that empty string is handled safely.
+
+        Given: Empty string ""
+        When: _repeat_last_two is called
+        Then: Returns empty string
+        """
+        result = _repeat_last_two("")
+        assert result == "", f"Expected empty string, got {result!r}"
+
+    @pytest.mark.unit
+    def test_repeat_last_two_single_digit(self):
+        """
+        Verify that single-digit string is handled safely.
+
+        Given: Single digit "5"
+        When: _repeat_last_two is called
+        Then: Returns appropriate single-digit replacement
+        """
+        result = _repeat_last_two("5")
+        assert len(result) == 1, f"Expected length 1, got {len(result)}"
+        assert result.isdigit(), f"Expected digit, got {result!r}"
+
+    @pytest.mark.unit
+    def test_repeat_last_two_single_zero(self):
+        """
+        Verify that single zero gets special fallback treatment.
+
+        Given: Single digit "0"
+        When: _repeat_last_two is called
+        Then: Returns "1" (special fallback for all-zero strings)
+        """
+        result = _repeat_last_two("0")
+        assert result == "1", f"Expected '1', got {result!r}"
+
+    @pytest.mark.unit
+    def test_repeat_last_two_two_digit_normal(self):
+         """
+         Verify that two-digit string behavior follows the fallback rules.
+
+         Given: Two digits "35"
+         When: _repeat_last_two is called
+         Then: Since repeating "35" gives "35" (matches input), fallback to last digit
+         """
+         result = _repeat_last_two("35")
+         # "35" tiled to length 2 would give "35" (matches input), so fallback to last digit "5"
+         assert result == "55", f"Expected '55' (fallback to last digit), got {result!r}"
+
+    @pytest.mark.unit
+    def test_repeat_last_two_repeated_single_digit_fallback(self):
+        """
+        Verify fallback handling when all digits are identical.
+
+        Given: String "8888"
+        When: _repeat_last_two is called
+        Then: Uses fallback (all digits identical case)
+        """
+        result = _repeat_last_two("8888")
+        # Should be "0000" (fallback since "8888" would repeat to "8888")
+        assert result == "0000", f"Expected '0000', got {result!r}"
+        assert len(result) == 4, f"Expected length 4, got {len(result)}"
+
+    @pytest.mark.unit
+    def test_repeat_last_two_all_zeros_fallback(self):
+        """
+        Verify fallback handling for all-zero strings.
+
+        Given: String "0000"
+        When: _repeat_last_two is called
+        Then: Uses fallback "1111" (special case for all zeros)
+        """
+        result = _repeat_last_two("0000")
+        # Should be "1111" (special fallback for all zeros)
+        assert result == "1111", f"Expected '1111', got {result!r}"
+        assert len(result) == 4, f"Expected length 4, got {len(result)}"
+
+    @pytest.mark.unit
+    def test_repeat_last_two_length_preservation(self):
+        """
+        Verify that output length always matches input length.
+
+        Given: Various length input strings
+        When: _repeat_last_two is called
+        Then: Output length always equals input length
+        """
+        test_cases = [
+            "",
+            "0",
+            "42",
+            "123",
+            "4037",
+            "40372831",
+            "40372831243535",
+        ]
+        for case in test_cases:
+            result = _repeat_last_two(case)
+            assert len(result) == len(case), (
+                f"Length mismatch for {case!r}: expected {len(case)}, got {len(result)}"
+            )
+

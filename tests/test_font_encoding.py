@@ -20,26 +20,25 @@ All three real-world encoding strategies are covered:
 
 from __future__ import annotations
 
-import pytest
 import pikepdf
+import pytest
 
 from bank_statement_anonymiser._shared import (
-    _parse_tounicode_cmap,
     _LOWER_LETTERS,
     _UPPER_LETTERS,
     _make_scramble_map,
+    _parse_tounicode_cmap,
 )
 from bank_statement_anonymiser.anonymise import (
-    _FontEncoding,
     _decode_raw_bytes,
-    _decode_raw_bytes_v2,
     _decode_raw_bytes_safe,
+    _decode_raw_bytes_v2,
+    _FontEncoding,
     _is_identity_h_font,
     _reencode_fragment,
     _scramble_text,
     _scramble_text_font_aware,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers to build minimal CMap streams for testing
@@ -988,5 +987,94 @@ class TestRoundTripEncoding:
         # And we can decode the scrambled bytes back to the scrambled text
         decoded_again = _decode_raw_bytes(re_encoded, "/F1", forward_maps)
         assert decoded_again == scrambled, (
-            f"Re-decoded text {decoded_again!r} should equal scrambled {scrambled!r}"
+             f"Re-decoded text {decoded_again!r} should equal scrambled {scrambled!r}"
         )
+
+
+class TestIdentityHFontDetectionEdgeCases:
+    """Edge case tests for _is_identity_h_font robustness."""
+
+    @pytest.mark.unit
+    def test_is_identity_h_font_none_input(self):
+        """
+        Verify that None font dictionary is handled safely.
+
+        Given: None as font dictionary
+        When: _is_identity_h_font is called
+        Then: Returns False without crashing
+        """
+        result = _is_identity_h_font(None)  # type: ignore
+        assert result is False, f"Expected False for None input, got {result}"
+
+    @pytest.mark.unit
+    def test_is_identity_h_font_missing_encoding(self):
+         """
+         Verify that font dict without /Encoding key returns False.
+
+         Given: Font dictionary with no /Encoding entry
+         When: _is_identity_h_font is called
+         Then: Returns False
+         """
+         font_dict = pikepdf.Dictionary()
+         # No /Encoding key
+         result = _is_identity_h_font(font_dict)
+         assert result is False, f"Expected False for missing /Encoding, got {result}"
+
+    @pytest.mark.unit
+    def test_is_identity_h_font_empty_dict(self):
+         """
+         Verify that empty font dictionary returns False.
+
+         Given: Empty font dictionary
+         When: _is_identity_h_font is called
+         Then: Returns False
+         """
+         font_dict = pikepdf.Dictionary()
+         result = _is_identity_h_font(font_dict)
+         assert result is False, f"Expected False for empty dict, got {result}"
+
+    @pytest.mark.unit
+    def test_is_identity_h_font_correct_encoding(self):
+         """
+         Verify that Identity-H encoding is correctly detected.
+
+         Given: Font dictionary with /Encoding: /Identity-H (or /Identity_H)
+         When: _is_identity_h_font is called
+         Then: Returns True
+         """
+         font_dict = pikepdf.Dictionary()
+         font_dict["/Encoding"] = pikepdf.Name.Identity_H  # pikepdf uses underscore
+         result = _is_identity_h_font(font_dict)
+         # The implementation should handle both underscore and hyphen versions
+         assert result is True, f"Expected True for Identity_H, got {result}"
+
+    @pytest.mark.unit
+    def test_is_identity_h_font_other_encoding(self):
+        """
+        Verify that non-Identity-H encoding returns False.
+
+        Given: Font dictionary with /Encoding: /WinAnsiEncoding
+        When: _is_identity_h_font is called
+        Then: Returns False
+        """
+        font_dict = pikepdf.Dictionary()
+        font_dict["/Encoding"] = pikepdf.Name.WinAnsiEncoding
+        result = _is_identity_h_font(font_dict)
+        assert result is False, f"Expected False for WinAnsiEncoding, got {result}"
+
+    @pytest.mark.unit
+    def test_is_identity_h_font_malformed_dict(self):
+        """
+        Verify that accessing malformed dict doesn't crash.
+
+        Given: A problematic font dictionary (e.g., with unexpected types)
+        When: _is_identity_h_font is called
+        Then: Returns False gracefully
+        """
+        # This tests the defensive try/except
+        font_dict = pikepdf.Dictionary()
+        font_dict["/Encoding"] = "not_a_name"  # Invalid type for /Encoding
+        result = _is_identity_h_font(font_dict)
+        # Should return False since the string "not_a_name" doesn't match
+        assert result is False, f"Expected False for invalid encoding type, got {result}"
+

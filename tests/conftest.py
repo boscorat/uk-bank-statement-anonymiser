@@ -10,9 +10,8 @@ This module provides:
 from __future__ import annotations
 
 import random
-import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pikepdf
@@ -20,7 +19,7 @@ import pytest
 
 
 @pytest.fixture
-def mock_random_source() -> Generator[MagicMock, None, None]:
+def mock_random_source() -> Generator[MagicMock]:
     """
     Mock secrets.SystemRandom() to use a seeded random.Random for deterministic testing.
 
@@ -262,7 +261,7 @@ def output_dir(tmp_path: Path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def reset_random_seed() -> Generator[None, None, None]:
+def reset_random_seed() -> Generator[None]:
     """
     Auto-used fixture that resets random seed before each test for consistency.
 
