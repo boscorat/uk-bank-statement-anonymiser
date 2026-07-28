@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> None:
             never_anonymise_path=args.never_anonymise,
             debug=args.debug,
         )
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, ValueError, OSError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
