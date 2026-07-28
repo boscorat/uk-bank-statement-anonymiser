@@ -179,8 +179,7 @@ class TestCorruptPdf:
         """A file with garbage bytes raises an exception when opened as PDF."""
         junk = tmp_path / "junk.pdf"
         junk.write_bytes(b"this is not a pdf at all\x00\x01\x02")
-        out = tmp_path / "out.pdf"
-        with pytest.raises(Exception):  # pikepdf.PdfError or similar
+        with pytest.raises(pikepdf.PdfError):
             anonymise_pdf(junk, output_path=out)
 
     @pytest.mark.unit
