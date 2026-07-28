@@ -1,9 +1,14 @@
-# release.yml — build and publish on version tag push.
+# release.yml — build, publish, and create draft release on version tag push.
 #
 # Triggered by pushing a tag like "v0.1.0".  Two jobs run in sequence:
 #
 #   1. pypi-publish    — build wheel + sdist, publish to PyPI via OIDC.
-#   2. github-release  — create a GitHub Release with all assets attached.
+#   2. github-release  — create a draft GitHub Release with release notes
+#                        generated from git log, and update CHANGELOG.md.
+#
+# The release is created as a draft. Manually publish it when ready.
+# Release notes and CHANGELOG.md are generated from the same git log output,
+# ensuring they always agree (unless you manually edit the draft notes).
 #
 # One-time setup required:
 #   - Create a "pypi" environment in GitHub repo Settings > Environments.
@@ -78,22 +83,92 @@ jobs:
           path: dist/
 
 
-  # ── Create GitHub Release with all assets ───────────────────────────
+  # ── Create draft GitHub Release and update CHANGELOG.md ─────────────
   github-release:
-    name: Create GitHub Release
+    name: Create draft GitHub Release
     runs-on: ubuntu-latest
     needs: [pypi-publish]
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          ref: master
+          fetch-depth: 0  # full history needed for git log
+
       - name: Download Python dists
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: python-dists
           path: dist/
 
-      - name: Create release
+      - name: Generate release notes from git log
+        id: notes
+        run: |
+          # Find the previous tag
+          PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | head -2 | tail -1)
+          VERSION="${GITHUB_REF_NAME#v}"
+
+          echo "Generating notes for $GITHUB_REF_NAME (previous: $PREV_TAG)"
+
+          # Build release notes from git log
+          {
+            echo "notes<<EOF"
+            echo "## What's Changed"
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              git log --pretty=format:"- %s" "$PREV_TAG".."$GITHUB_REF_NAME" | grep -v "^- release:"
+            else
+              git log --pretty=format:"- %s" "$GITHUB_REF_NAME" | grep -v "^- release:"
+            fi
+            echo ""
+            echo ""
+            echo "## Installation"
+            echo ""
+            echo '```bash'
+            echo "pip install uk-bank-statement-anonymiser==$VERSION"
+            echo '```'
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create draft release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65  # v2
         with:
-          generate_release_notes: true
+          draft: true
+          body: ${{ steps.notes.outputs.notes }}
           files: dist/*
+
+      - name: Update CHANGELOG.md
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          DATE=$(date -u +%Y-%m-%d)
+
+          # Extract just the commit list from release notes (lines starting with "- ")
+          COMMITS=$(echo "${{ steps.notes.outputs.notes }}" | sed -n '/^- /p')
+
+          # Build new changelog entry
+          ENTRY="## [$VERSION] - $DATE\n\n### Added\n\n$COMMITS\n"
+
+          # Insert after the "## [Unreleased]" line
+          python3 -c "
+          import re
+          with open('CHANGELOG.md', 'r') as f:
+              content = f.read()
+          entry = '''## [$VERSION] - $DATE
+
+### Added
+
+$COMMITS
+'''
+          content = content.replace('## [Unreleased]', '## [Unreleased]\n\n' + entry, 1)
+          with open('CHANGELOG.md', 'w') as f:
+              f.write(content)
+          "
+
+      - name: Commit CHANGELOG.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "docs: update CHANGELOG.md for ${GITHUB_REF_NAME}" && git push
