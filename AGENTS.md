@@ -18,7 +18,7 @@ A Python library that anonymises UK bank statement PDFs by scrambling personal d
 
 **Core logic:** `src/bank_statement_anonymiser/anonymise.py` — contains the three-phase processing pipeline:
 1. **Phase 1** — Line-aware scan pass (reads content stream, detects sensitive patterns, marks for protection/replacement).
-   - **Line accumulation:** Fragments are accumulated into a "line" for phrase matching. `Tm` (Text Matrix) operators do NOT break the line unless the Y-coordinate changes by >2.0 units (handles word-by-word positioning).
+   - **Line accumulation:** Fragments are accumulated into a "line" for phrase matching. `Tm` (Text Matrix) operators do NOT break the line unless the Y-coordinate changes by >=2.0 units (handles word-by-word positioning).
 2. **Phase 2** — Build byte pairs (maps original bytes to replacement bytes).
    - **Numeric ID strategy:** `_repeat_last_two` tiles the last two digits of a sort code/account/IBAN to fill the length. This ensures replacements are obviously fake but deterministic across pages/runs.
 3. **Phase 3** — Rewrite content stream (dict lookup and substitute).
