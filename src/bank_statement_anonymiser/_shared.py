@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import re
 import secrets
+import warnings
 
 import pikepdf
 
@@ -573,6 +574,10 @@ def _rewrite_page_content_stream(
     try:
         instructions = list(pikepdf.parse_content_stream(pike_page))
     except (pikepdf.PdfError, ValueError, KeyError):
+        warnings.warn(
+            "Failed to rewrite content stream for page — text on this page may not be anonymised",
+            stacklevel=2,
+        )
         return False
 
     # Build a fast lookup: original_bytes -> scrambled_bytes

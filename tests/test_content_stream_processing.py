@@ -1014,3 +1014,50 @@ class TestBuildScrambleBytesPairsParseFailure:
         assert len(w) == 1
         assert "Failed to parse content stream" in str(w[0].message)
 
+
+class TestRewritePageContentStreamParseFailure:
+    """Tests for _rewrite_page_content_stream() when content stream parsing fails."""
+
+    @pytest.mark.unit
+    def test_warns_on_parse_error(self, simple_text_pdf):
+        """Should emit UserWarning when pikepdf.parse_content_stream raises PdfError."""
+        import warnings
+        from unittest.mock import patch
+
+        pdf = pikepdf.open(str(simple_text_pdf))
+        page = pdf.pages[0]
+
+        with (
+            patch(
+                "pikepdf.parse_content_stream",
+                side_effect=pikepdf.PdfError("mocked parse failure"),
+            ),
+            warnings.catch_warnings(record=True) as w,
+        ):
+            warnings.simplefilter("always")
+            result = _rewrite_page_content_stream(
+                page, pdf, [(b"old", b"new")]
+            )
+
+        assert result is False
+        assert len(w) == 1
+        assert "Failed to rewrite content stream" in str(w[0].message)
+
+    @pytest.mark.unit
+    def test_returns_false_on_parse_error(self, simple_text_pdf):
+        """Should return False (not raise) when content stream is unparseable."""
+        from unittest.mock import patch
+
+        pdf = pikepdf.open(str(simple_text_pdf))
+        page = pdf.pages[0]
+
+        with patch(
+            "pikepdf.parse_content_stream",
+            side_effect=pikepdf.PdfError("mocked"),
+        ):
+            result = _rewrite_page_content_stream(
+                page, pdf, [(b"old", b"new")]
+            )
+
+        assert result is False
+
