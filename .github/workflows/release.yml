@@ -141,30 +141,23 @@ jobs:
 
       - name: Update CHANGELOG.md
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          DATE=$(date -u +%Y-%m-%d)
-
-          # Extract just the commit list from release notes (lines starting with "- ")
-          COMMITS=$(echo "${{ steps.notes.outputs.notes }}" | sed -n '/^- /p')
-
-          # Build new changelog entry
-          ENTRY="## [$VERSION] - $DATE\n\n### Added\n\n$COMMITS\n"
-
-          # Insert after the "## [Unreleased]" line
-          python3 -c "
+          python3 << 'PYTHON_EOF'
           import re
+          VERSION = "${{ env.GITHUB_REF_NAME }}"[1:]
+          DATE = "$(date -u +%Y-%m-%d)"
           with open('CHANGELOG.md', 'r') as f:
               content = f.read()
-          entry = '''## [$VERSION] - $DATE
+          commits = "${{ steps.notes.outputs.notes }}".split('\n')
+          entry = f"""## [{VERSION}] - {DATE}
 
-### Added
+          ### Added
 
-$COMMITS
-'''
-          content = content.replace('## [Unreleased]', '## [Unreleased]\n\n' + entry, 1)
+          {chr(10).join([c for c in commits if c.startswith('- ')])}
+          """
+          content = content.replace('## [Unreleased]', f'## [Unreleased]\n\n{entry}', 1)
           with open('CHANGELOG.md', 'w') as f:
               f.write(content)
-          "
+          PYTHON_EOF
 
       - name: Commit CHANGELOG.md
         run: |
