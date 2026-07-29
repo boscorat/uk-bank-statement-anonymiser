@@ -1,39 +1,23 @@
 name: "Bug report"
-description: "Report an anonymisation failure or unexpected result."
+description: "Report a general bug (not related to statement anonymisation)."
 title: "[Bug] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the report. Precise details and an anonymised statement make it
-        much faster to diagnose and fix anonymisation issues.
+        Thanks for the report. Please describe the issue in your own words.
 
-  - type: input
-    id: bank_name
-    attributes:
-      label: Bank and account type
-      description: The bank name and account type that is failing to anonymise correctly.
-      placeholder: e.g. HSBC UK — Advance Current Account
-    validations:
-      required: true
+        > **Do not paste log output, debug output, or console transcripts without checking for PII.**
+        > These may contain account numbers, names, addresses, or other sensitive data.
+        > Redact any sensitive content before sharing.
 
   - type: textarea
-    id: expected
+    id: description
     attributes:
-      label: Expected behaviour
-      description: What did you expect to happen? (e.g. "All account numbers should have been scrambled.")
-    validations:
-      required: true
-
-  - type: textarea
-    id: actual
-    attributes:
-      label: Actual behaviour
-      description: >
-        What actually happened? Describe the anonymisation failure — which data was
-        left visible, which fields were incorrectly scrambled, or any errors produced.
-      placeholder: Describe what went wrong.
+      label: Description
+      description: A clear description of the bug.
+      placeholder: Describe the bug.
     validations:
       required: true
 
@@ -47,43 +31,42 @@ body:
     validations:
       required: true
 
-  - type: markdown
-    attributes:
-      value: |
-        ---
-        ### Attaching an anonymised statement
-
-        > **You must anonymise your statement before attaching it.**
-        >
-        > Anonymised statements have all text scrambled so that no personal or financial
-        > information is readable, while preserving enough structure to reproduce the issue.
-        >
-        > - Using **openstan**: use the built-in Anonymise PDF tool —
-        >   [openstan anonymisation guide](https://openstan.org/screens/anonymise/)
-        > - Using the **CLI or Python API**: use `anonymise-pdf` —
-        >   see [CONTRIBUTING.md](https://github.com/boscorat/uk-bank-statement-anonymiser/blob/master/CONTRIBUTING.md)
-        >
-        > **Statements that have not been anonymised will be removed without review.**
-
   - type: textarea
-    id: statement_attachment
+    id: steps
     attributes:
-      label: Anonymised statement
+      label: Steps to reproduce
       description: >
-        Drag and drop your anonymised PDF here, or describe why you are unable to attach one.
-        GitHub accepts PDF attachments directly in this field.
-        Attaching the failing statement is strongly recommended — issues reported without one
-        may take significantly longer to investigate.
-      placeholder: Drag and drop the anonymised PDF here.
+        Steps to reproduce the behaviour.
+      placeholder: |
+        1. Install uk-bank-statement-anonymiser
+        2. Run command X
+        3. See error
     validations:
       required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: >
+        What actually happened? Do not paste raw output without checking for PII.
+      placeholder: Describe what happened (without pasting sensitive output).
+    validations:
+      required: true
 
   - type: textarea
     id: additional_context
     attributes:
       label: Additional context
       description: >
-        Anything else that might help — number of pages in the statement, whether it's a
-        downloaded PDF or a scanned copy, OS and Python version, custom config files used, etc.
+        Anything else that might help — OS, Python version, etc.
     validations:
       required: false

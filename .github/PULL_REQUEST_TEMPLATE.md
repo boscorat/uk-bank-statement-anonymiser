@@ -6,10 +6,16 @@
 - [ ] Documentation
 - [ ] Dependency update
 
-## Review submissions
+## Important: do not attach sensitive data
 
-> Do NOT attach PDF bank statements — they contain sensitive data.
-> Only attach the review file (reviews/*.md).
+> **Do NOT attach PDF bank statements — anonymised or otherwise.**
+> If anonymisation is failing, the statement will not be properly anonymised.
+
+> **Do NOT paste log output, debug output, or console transcripts without checking for PII.**
+> These may contain account numbers, names, addresses, or other sensitive data.
+> Redact any sensitive content before sharing, or describe the issue in your own words.
+
+## Review submissions
 
 - [ ] Review file follows `reviews/TEMPLATE.md` format
 - [ ] File named as `<bank>-<account-type>-<YYYY-MM>-<username>.md`

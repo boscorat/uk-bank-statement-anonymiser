@@ -8,6 +8,9 @@ body:
       value: |
         Thanks for the suggestion! Please describe what you'd like and why it would be useful.
 
+        > **Do not attach statements, anonymised or otherwise.**
+        > Do not paste log output, debug output, or console transcripts without checking for PII.
+
   - type: textarea
     id: description
     attributes:

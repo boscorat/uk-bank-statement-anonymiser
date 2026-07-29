@@ -31,7 +31,8 @@ One function. One command. Done.
 This tool handles known patterns but **cannot guarantee that all personally identifiable information has been removed**. Bank statement PDFs may contain data in places this tool does not currently scan (e.g. embedded metadata, images, or unusual formatting).
 
 - **You must review every anonymised PDF yourself before sharing it with any third party.** Verify that no account numbers, names, addresses, balances, or other sensitive data remain visible.
-- **Do not attach PDFs — anonymised or otherwise — to GitHub issues or discussion threads.** Use text excerpts or screenshots with sensitive data redacted instead.
+- **Do not attach PDFs — anonymised or otherwise — to GitHub issues, PRs, or discussion threads.** If anonymisation is failing, the statement will not be properly anonymised. Use text excerpts or screenshots with sensitive data redacted instead.
+- **Do not paste log output, debug output, or console transcripts without checking them for PII.** These may contain account numbers, names, addresses, or other sensitive data. Redact any sensitive content before sharing.
 
 ## What gets anonymised
 

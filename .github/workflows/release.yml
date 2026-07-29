@@ -143,24 +143,19 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           DATE=$(date -u +%Y-%m-%d)
-
-          # Extract just the commit list from release notes (lines starting with "- ")
-          COMMITS=$(echo "${{ steps.notes.outputs.notes }}" | sed -n '/^- /p')
-
-          # Build new changelog entry
-          ENTRY="## [$VERSION] - $DATE\n\n### Added\n\n$COMMITS\n"
-
-          # Insert after the "## [Unreleased]" line
+          {
+            echo "## [$VERSION] - $DATE"
+            echo ""
+            echo "### Added"
+            echo ""
+            echo "${{ steps.notes.outputs.notes }}" | grep '^- '
+            echo ""
+          } > /tmp/changelog_entry.md
           python3 -c "
-          import re
+          with open('/tmp/changelog_entry.md') as f:
+              entry = f.read()
           with open('CHANGELOG.md', 'r') as f:
               content = f.read()
-          entry = '''## [$VERSION] - $DATE
-
-### Added
-
-$COMMITS
-'''
           content = content.replace('## [Unreleased]', '## [Unreleased]\n\n' + entry, 1)
           with open('CHANGELOG.md', 'w') as f:
               f.write(content)

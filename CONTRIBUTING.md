@@ -2,7 +2,9 @@
 
 Thanks for your interest in contributing! The most valuable contribution you can make is testing the anonymiser against real bank statements from your own accounts.
 
-Your bank statement PDFs **must stay on your machine** — never attach them to issues, PRs, or discussions. You only submit a review report describing what you observed.
+Your bank statement PDFs **must stay on your machine** — never attach them to issues, PRs, or discussions. If anonymisation is failing, the statement will not be properly anonymised. You only submit a review report describing what you observed.
+
+Log output, debug output, and console transcripts may contain personally identifiable information (account numbers, names, addresses, etc.). Check contents before sharing, or use text excerpts with sensitive data redacted.
 
 ## Quick start
 
