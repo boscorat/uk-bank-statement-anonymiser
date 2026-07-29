@@ -19,34 +19,19 @@ For detailed step-by-step instructions, choose a workflow below.
 
 This option uses only the GitHub web interface — no git knowledge or installation needed.
 
+**Prerequisites:** You must have already anonymised your statement and inspected the result on your local machine. See the [Quick Overview](#quick-overview) or [CONTRIBUTING.md](https://github.com/boscorat/uk-bank-statement-anonymiser/blob/master/CONTRIBUTING.md) for instructions on running the anonymiser.
+
 ### Step 1: Fork the repository
 
 1. Go to [github.com/boscorat/uk-bank-statement-anonymiser](https://github.com/boscorat/uk-bank-statement-anonymiser)
 2. Click the **Fork** button (top right)
 3. Click **Create fork** to create a copy in your GitHub account
 
-### Step 2: Anonymise your statement
-
-Run this command on your machine (you need Python installed):
-
-```bash
-uv run anonymise-pdf statement.pdf
-```
-
-This creates `anonymised_statement.pdf` alongside the original. The original is untouched.
-
-### Step 3: Open and inspect the anonymised PDF
-
-Check that:
-- Personal data (account numbers, names, addresses) is scrambled
-- Layout and formatting are preserved
-- Transaction values and types are correct
-
-### Step 4: Create your review file
+### Step 2: Create your review file
 
 1. In your forked repository on GitHub, navigate to the `reviews` folder
 2. Click **Add file** → **Create new file**
-3. In the filename field, type: `reviews/` followed by the filename using this format:
+3. In the filename field, type just the filename (without `reviews/` prefix, since you're already in that folder):
    ```
    <bank>-<account-type>-<YYYY-MM>-<your-username>.md
    ```
@@ -58,7 +43,7 @@ Check that:
 5. Fill in the template with your findings
 6. Click **Commit changes** (use the default commit message)
 
-### Step 5: Create a Pull Request
+### Step 3: Create a Pull Request
 
 1. Go to your forked repository on GitHub
 2. Click **Contribute** → **Open pull request**
@@ -83,7 +68,13 @@ This option uses git commands on the command line. You should have git installed
    cd uk-bank-statement-anonymiser
    ```
 
-### Step 2: Create a branch
+### Step 2: Install dependencies
+
+```bash
+uv sync
+```
+
+### Step 3: Create a branch
 
 ```bash
 git checkout -b review/<bank>-<account-type>
@@ -94,13 +85,13 @@ Example:
 git checkout -b review/hsbc-advance-current
 ```
 
-### Step 3: Anonymise your statement
+### Step 4: Anonymise your statement
 
 ```bash
 uv run anonymise-pdf statement.pdf
 ```
 
-### Step 4: Create your review file
+### Step 5: Create your review file
 
 1. Copy the template:
    ```bash
@@ -113,7 +104,7 @@ uv run anonymise-pdf statement.pdf
 
 2. Open the new file in your editor and fill in the template
 
-### Step 5: Commit and push
+### Step 6: Commit and push
 
 ```bash
 git add "reviews/<your-filename>.md"
@@ -121,7 +112,7 @@ git commit -m "Add review: <Bank> <Account Type>"
 git push -u origin review/<bank>-<account-type>
 ```
 
-### Step 6: Create a Pull Request
+### Step 7: Create a Pull Request
 
 1. Go to your fork on GitHub
 2. Click **Compare & pull request**
