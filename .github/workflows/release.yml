@@ -141,23 +141,25 @@ jobs:
 
       - name: Update CHANGELOG.md
         run: |
-          python3 << 'PYTHON_EOF'
-          import re
-          VERSION = "${{ env.GITHUB_REF_NAME }}"[1:]
-          DATE = "$(date -u +%Y-%m-%d)"
+          VERSION="${GITHUB_REF_NAME#v}"
+          DATE=$(date -u +%Y-%m-%d)
+          {
+            echo "## [$VERSION] - $DATE"
+            echo ""
+            echo "### Added"
+            echo ""
+            echo "${{ steps.notes.outputs.notes }}" | grep '^- '
+            echo ""
+          } > /tmp/changelog_entry.md
+          python3 -c "
+          with open('/tmp/changelog_entry.md') as f:
+              entry = f.read()
           with open('CHANGELOG.md', 'r') as f:
               content = f.read()
-          commits = "${{ steps.notes.outputs.notes }}".split('\n')
-          entry = f"""## [{VERSION}] - {DATE}
-
-          ### Added
-
-          {chr(10).join([c for c in commits if c.startswith('- ')])}
-          """
-          content = content.replace('## [Unreleased]', f'## [Unreleased]\n\n{entry}', 1)
+          content = content.replace('## [Unreleased]', '## [Unreleased]\n\n' + entry, 1)
           with open('CHANGELOG.md', 'w') as f:
               f.write(content)
-          PYTHON_EOF
+          "
 
       - name: Commit CHANGELOG.md
         run: |
