@@ -22,24 +22,24 @@
 
 <!-- Mark each item as PASS or FAIL and add a comment if needed. -->
 
-| Status | Check | Comment |
+| Status | Check | Comment if FAIL |
 |--------|-------|---------|
-| ✅ PASS | All account numbers are anonymised | |
-| ✅ PASS | All sort codes are anonymised (if applicable) | |
-| ✅ PASS | All names are anonymised | |
-| ✅ PASS | All addresses are anonymised | |
-| ✅ PASS | No transaction values are anonymised | |
-| ✅ PASS | No transaction types are anonymised | |
-| ✅ PASS | No personally identifiable information is left | |
-| ✅ PASS | All `always_anonymise` instances are replaced by the specified value | |
-| ✅ PASS | None of the `never_anonymise` exclusions are anonymised | |
+| PASS / FAIL | All account numbers are anonymised | |
+| PASS / FAIL | All sort codes are anonymised (if applicable) | |
+| PASS / FAIL | All names are anonymised | |
+| PASS / FAIL | All addresses are anonymised | |
+| PASS / FAIL | No transaction values are anonymised | |
+| PASS / FAIL | No transaction types are anonymised | |
+| PASS / FAIL | No personally identifiable information is left | |
+| PASS / FAIL | All `always_anonymise` instances are replaced by the specified value | |
+| PASS / FAIL | None of the `never_anonymise` exclusions are anonymised | |
 
 ## Overall Verdict
 
 > If **ALL** checklist items are PASS, choose **PASS**.
 > If **ANY** item is FAIL, choose **FAIL**.
 
-**Verdict:** [ ] PASS  [ ] FAIL
+**Verdict:** PASS / FAIL
 
 ## Additional Notes
 
