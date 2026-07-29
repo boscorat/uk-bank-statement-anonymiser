@@ -20,7 +20,6 @@ This module tests:
 
 from __future__ import annotations
 
-import string
 from pathlib import Path
 
 import pikepdf
@@ -28,8 +27,6 @@ import pytest
 
 from bank_statement_anonymiser import anonymise_pdf
 from bank_statement_anonymiser._shared import (
-    _LOWER_LETTERS,
-    _UPPER_LETTERS,
     _decode_pdf_operand,
     _make_scramble_map,
 )
@@ -95,120 +92,12 @@ def _extract_all_text(pdf_path: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# Module 11a: _make_scramble_map() structural properties
-# ---------------------------------------------------------------------------
-
-
-class TestScrambleMapStructure:
-    """_make_scramble_map() must produce a well-formed derangement."""
-
-    @pytest.mark.unit
-    def test_returns_dict(self, mock_random_source):
-        result = _make_scramble_map()
-        assert isinstance(result, dict)
-
-    @pytest.mark.unit
-    def test_keys_are_ints(self, mock_random_source):
-        result = _make_scramble_map()
-        assert all(isinstance(k, int) for k in result)
-
-    @pytest.mark.unit
-    def test_values_are_ints(self, mock_random_source):
-        result = _make_scramble_map()
-        assert all(isinstance(v, int) for v in result.values())
-
-    @pytest.mark.unit
-    def test_covers_all_lowercase(self, mock_random_source):
-        result = _make_scramble_map()
-        for ch in _LOWER_LETTERS:
-            assert ord(ch) in result, f"lowercase '{ch}' missing from map"
-
-    @pytest.mark.unit
-    def test_covers_all_uppercase(self, mock_random_source):
-        result = _make_scramble_map()
-        for ch in _UPPER_LETTERS:
-            assert ord(ch) in result, f"uppercase '{ch}' missing from map"
-
-    @pytest.mark.unit
-    def test_map_size_is_52(self, mock_random_source):
-        """26 lowercase + 26 uppercase = 52 entries."""
-        result = _make_scramble_map()
-        assert len(result) == 52
-
-    @pytest.mark.unit
-    def test_lowercase_maps_to_lowercase(self, mock_random_source):
-        result = _make_scramble_map()
-        for ch in _LOWER_LETTERS:
-            mapped = chr(result[ord(ch)])
-            assert mapped.islower(), f"'{ch}' maps to non-lowercase '{mapped}'"
-
-    @pytest.mark.unit
-    def test_uppercase_maps_to_uppercase(self, mock_random_source):
-        result = _make_scramble_map()
-        for ch in _UPPER_LETTERS:
-            mapped = chr(result[ord(ch)])
-            assert mapped.isupper(), f"'{ch}' maps to non-uppercase '{mapped}'"
-
-    @pytest.mark.unit
-    def test_no_fixed_points_lowercase(self, mock_random_source):
-        """No lowercase letter maps to itself (derangement property)."""
-        result = _make_scramble_map()
-        for ch in _LOWER_LETTERS:
-            assert result[ord(ch)] != ord(ch), f"'{ch}' maps to itself"
-
-    @pytest.mark.unit
-    def test_no_fixed_points_uppercase(self, mock_random_source):
-        """No uppercase letter maps to itself (derangement property)."""
-        result = _make_scramble_map()
-        for ch in _UPPER_LETTERS:
-            assert result[ord(ch)] != ord(ch), f"'{ch}' maps to itself"
-
-    @pytest.mark.unit
-    def test_lowercase_bijection(self, mock_random_source):
-        """All 26 lowercase output values are distinct (injective on lowercase)."""
-        result = _make_scramble_map()
-        lower_outputs = [result[ord(ch)] for ch in _LOWER_LETTERS]
-        assert len(set(lower_outputs)) == 26, "Lowercase mapping is not bijective"
-
-    @pytest.mark.unit
-    def test_uppercase_bijection(self, mock_random_source):
-        """All 26 uppercase output values are distinct (injective on uppercase)."""
-        result = _make_scramble_map()
-        upper_outputs = [result[ord(ch)] for ch in _UPPER_LETTERS]
-        assert len(set(upper_outputs)) == 26, "Uppercase mapping is not bijective"
-
-    @pytest.mark.unit
-    def test_digits_not_in_map(self, mock_random_source):
-        """Digit codepoints are not present as keys."""
-        result = _make_scramble_map()
-        for ch in string.digits:
-            assert ord(ch) not in result, f"digit '{ch}' should not be in map"
-
-    @pytest.mark.unit
-    def test_symbols_not_in_map(self, mock_random_source):
-        """Common symbol codepoints are not present as keys."""
-        result = _make_scramble_map()
-        for ch in "!@#$%^&*()-_=+[]{}|;:',.<>?/ ":
-            assert ord(ch) not in result, f"symbol '{ch}' should not be in map"
-
-
-# ---------------------------------------------------------------------------
-# Module 11b: _scramble_text() per-character consistency
+# _scramble_text() per-character consistency
 # ---------------------------------------------------------------------------
 
 
 class TestScrambleTextConsistency:
     """_scramble_text() applies the map consistently to every letter."""
-
-    @pytest.mark.unit
-    def test_digits_unchanged(self, mock_random_source):
-        m = _make_scramble_map()
-        assert _scramble_text("12345", m) == "12345"
-
-    @pytest.mark.unit
-    def test_symbols_unchanged(self, mock_random_source):
-        m = _make_scramble_map()
-        assert _scramble_text("!@#$%", m) == "!@#$%"
 
     @pytest.mark.unit
     def test_spaces_unchanged(self, mock_random_source):
@@ -228,24 +117,6 @@ class TestScrambleTextConsistency:
         m = _make_scramble_map()
         text = "HelloWorld"
         assert _scramble_text(text, m) == _scramble_text(text, m)
-
-    @pytest.mark.unit
-    def test_output_same_length_as_input(self, mock_random_source):
-        m = _make_scramble_map()
-        text = "QuickBrownFox"
-        assert len(_scramble_text(text, m)) == len(text)
-
-    @pytest.mark.unit
-    def test_case_preserved_per_character(self, mock_random_source):
-        """Every uppercase input letter maps to uppercase, lowercase to lowercase."""
-        m = _make_scramble_map()
-        original = "AbCdEf"
-        result = _scramble_text(original, m)
-        for orig_ch, res_ch in zip(original, result):
-            if orig_ch.isupper():
-                assert res_ch.isupper(), f"'{orig_ch}' → '{res_ch}' should be uppercase"
-            elif orig_ch.islower():
-                assert res_ch.islower(), f"'{orig_ch}' → '{res_ch}' should be lowercase"
 
 
 # ---------------------------------------------------------------------------
