@@ -1,0 +1,67 @@
+name: "Review request"
+description: "Request testing of the anonymiser against a specific bank statement type."
+title: "[Review] "
+labels: ["good first issue", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping test the anonymiser! We need community help to verify anonymisation works across different banks and account types.
+
+        > **Do not attach statements, anonymised or otherwise.**
+        > Your bank statement PDFs must stay on your machine — never attach them to issues, PRs, or discussions.
+        >
+        > **Do not paste log output, debug output, or console transcripts without checking for PII.**
+        > These may contain account numbers, names, addresses, or other sensitive data.
+
+        Please read the [Contributing guide](https://github.com/boscorat/uk-bank-statement-anonymiser/blob/master/CONTRIBUTING.md) before proceeding, especially the "Test a bank statement" section which explains how to anonymise your statement and submit a review.
+
+        For detailed step-by-step instructions (including a web-only option for git newcomers), see the [Review Submission Guide](https://github.com/boscorat/uk-bank-statement-anonymiser/blob/master/reviews/README.md).
+
+        Use the [review template](https://github.com/boscorat/uk-bank-statement-anonymiser/blob/master/reviews/TEMPLATE.md) when submitting your review.
+
+  - type: input
+    id: bank_name
+    attributes:
+      label: Bank name
+      description: The full name of the bank.
+      placeholder: e.g. HSBC UK
+    validations:
+      required: true
+
+  - type: input
+    id: account_type
+    attributes:
+      label: Account type
+      description: The specific account type to test.
+      placeholder: e.g. Advance Current Account
+    validations:
+      required: true
+
+  - type: input
+    id: statement_date
+    attributes:
+      label: Statement date
+      description: The date or date range of the statement (e.g. "January 2024" or "Jan–Mar 2024").
+      placeholder: e.g. January 2024
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: uk-bank-statement-anonymiser version
+      description: >
+        Run `anonymise-pdf --version` or check your `pyproject.toml` / `requirements.txt`.
+      placeholder: e.g. 0.1.7
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: >
+        Any other details — whether you have custom config files, specific anonymisation concerns, etc.
+    validations:
+      required: false

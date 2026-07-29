@@ -45,6 +45,8 @@ uv sync
 
 4. **Submit a PR** with your review file. A maintainer will review it and may ask for follow-up.
 
+   For detailed step-by-step instructions (including a web-only option for git newcomers), see the [Review Submission Guide](reviews/README.md).
+
 ## What to check
 
 The review template includes a full checklist, but the key items are:
