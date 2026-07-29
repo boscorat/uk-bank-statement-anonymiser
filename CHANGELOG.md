@@ -10,18 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 
-- Merge pull request #25 from boscorat/dedup-test-suite
 - test: remove duplicate scramble map/text tests across 3 files
 - Add review request template and step-by-step contributor guide (#24)
-- Merge pull request #19 from boscorat/boscorat-patch-1
 - Update checklist format in TEMPLATE.md
-- Merge pull request #18 from boscorat/17-feature-improve-template-for-bank-account-review
 - Improve review template with table-based checklist and overall verdict
-- Merge pull request #15 from boscorat/fix/pii-warnings
 - fix: correct CHANGELOG.md update step in release.yml
 - docs: strengthen PII warnings and split bug report templates
 - release.yml formatting and indentation corrected
-- Merge pull request #14 from boscorat/9-conduct-launch-suitability-review
 - FIX: repo with only one tag breaks detection
 - chore: bump development status to Production/Stable
 - ci: add issue templates, PR template, CODEOWNERS, and dependabot config
