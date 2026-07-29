@@ -1,0 +1,83 @@
+name: "Anonymisation failure"
+description: "Report a bank statement that is not anonymised correctly."
+title: "[Anonymisation] "
+labels: ["bug", "anonymisation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Precise details help us diagnose and fix anonymisation issues quickly.
+
+        > **Do not attach statements, anonymised or otherwise.**
+        > If anonymisation is failing, the statement will not be properly anonymised.
+        >
+        > **Do not paste log output, debug output, or console transcripts without checking for PII.**
+        > These may contain account numbers, names, addresses, or other sensitive data.
+
+  - type: input
+    id: bank_name
+    attributes:
+      label: Bank name
+      description: The full name of the bank.
+      placeholder: e.g. HSBC UK
+    validations:
+      required: true
+
+  - type: input
+    id: account_type
+    attributes:
+      label: Account type
+      description: The account type that is failing to anonymise correctly.
+      placeholder: e.g. Advance Current Account
+    validations:
+      required: true
+
+  - type: input
+    id: statement_date
+    attributes:
+      label: Statement date
+      description: The date or date range of the statement (e.g. "January 2024" or "Jan–Mar 2024").
+      placeholder: e.g. January 2024
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: uk-bank-statement-anonymiser version
+      description: >
+        Run `anonymise-pdf --version` or check your `pyproject.toml` / `requirements.txt`.
+      placeholder: e.g. 0.1.7
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen? (e.g. "All account numbers should have been scrambled.")
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: >
+        What actually happened? Describe the anonymisation failure — which data was
+        left visible, which fields were incorrectly scrambled, or any errors produced.
+        Do not paste raw output — describe the issue in your own words.
+      placeholder: Describe what went wrong (without pasting sensitive output).
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: >
+        Anything else that might help — number of pages in the statement, whether it's a
+        downloaded PDF or a scanned copy, OS and Python version, custom config files used, etc.
+        Do not paste log output or debug output without checking for PII.
+    validations:
+      required: false
