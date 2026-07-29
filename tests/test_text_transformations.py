@@ -22,6 +22,7 @@ from bank_statement_anonymiser._shared import (
     _repeat_last_two,
     _strip_numeric_separators,
 )
+from bank_statement_anonymiser.anonymise import _scramble_text
 
 
 class TestScrambleMapGeneration:
@@ -222,7 +223,7 @@ class TestScrambleMapGeneration:
 
 
 class TestScrambleTextTransformation:
-    """Unit tests for text scrambling using the generated scramble map."""
+    """Unit tests for _scramble_text() — the production scrambler."""
 
     @pytest.mark.unit
     def test_scramble_preserves_lowercase_letters(self, mock_random_source):
@@ -230,13 +231,13 @@ class TestScrambleTextTransformation:
         Verify that scrambled text only contains lowercase when input was lowercase.
 
         Given: A scramble map and a lowercase text string
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: The output contains only lowercase letters (no uppercase creep)
         """
         scramble_map = _make_scramble_map()
         text = "abcdefghijklmnopqrstuvwxyz"
         
-        result = text.translate(scramble_map)
+        result = _scramble_text(text, scramble_map)
         
         assert result.islower(), f"Result contains uppercase: {result}"
         assert len(result) == len(text), "Length changed after scrambling"
@@ -247,13 +248,13 @@ class TestScrambleTextTransformation:
         Verify that scrambled text only contains uppercase when input was uppercase.
 
         Given: A scramble map and an uppercase text string
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: The output contains only uppercase letters (no lowercase creep)
         """
         scramble_map = _make_scramble_map()
         text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         
-        result = text.translate(scramble_map)
+        result = _scramble_text(text, scramble_map)
         
         assert result.isupper(), f"Result contains lowercase: {result}"
         assert len(result) == len(text), "Length changed after scrambling"
@@ -264,13 +265,13 @@ class TestScrambleTextTransformation:
         Verify that digits are NOT scrambled (remain unchanged).
 
         Given: A scramble map and text containing digits and letters
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: All digits remain exactly as they were
         """
         scramble_map = _make_scramble_map()
         text = "abc123def456ghi"
         
-        result = text.translate(scramble_map)
+        result = _scramble_text(text, scramble_map)
         
         # Extract digits from input and result
         input_digits = "".join(c for c in text if c.isdigit())
@@ -286,13 +287,13 @@ class TestScrambleTextTransformation:
         Verify that symbols and punctuation are NOT scrambled.
 
         Given: A scramble map and text containing letters and symbols
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: All symbols remain exactly as they were
         """
         scramble_map = _make_scramble_map()
         text = "Hello-World!@#$%&*()"
         
-        result = text.translate(scramble_map)
+        result = _scramble_text(text, scramble_map)
         
         # Extract non-alphanumeric characters
         input_symbols = "".join(c for c in text if not c.isalnum())
@@ -305,10 +306,10 @@ class TestScrambleTextTransformation:
     @pytest.mark.unit
     def test_scramble_preserves_length(self, mock_random_source):
         """
-        Verify that scrambling preserves string length.
+        Verify that _scramble_text preserves string length.
 
         Given: A scramble map and various text samples
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: Length of output equals length of input
         """
         scramble_map = _make_scramble_map()
@@ -318,15 +319,21 @@ class TestScrambleTextTransformation:
             "Hello World",
             "Account123",
             "40-37-28",
-            "",  # empty string edge case
         ]
         
         for text in test_strings:
-            result = text.translate(scramble_map)
+            result = _scramble_text(text, scramble_map)
             assert len(result) == len(text), (
                 f"Length mismatch for '{text}': "
                 f"expected {len(text)}, got {len(result)}"
             )
+
+    @pytest.mark.unit
+    def test_scramble_empty_string(self, mock_random_source):
+        """Verify _scramble_text handles empty string."""
+        scramble_map = _make_scramble_map()
+        result = _scramble_text("", scramble_map)
+        assert result == "", f"Expected empty string, got {result!r}"
 
     @pytest.mark.unit
     def test_scramble_spaces_unchanged(self, mock_random_source):
@@ -334,13 +341,13 @@ class TestScrambleTextTransformation:
         Verify that spaces are preserved during scrambling.
 
         Given: A scramble map and text with spaces
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: Spaces remain in the same positions
         """
         scramble_map = _make_scramble_map()
         text = "Hello World Example"
         
-        result = text.translate(scramble_map)
+        result = _scramble_text(text, scramble_map)
         
         # Extract space positions
         input_spaces = [i for i, c in enumerate(text) if c == " "]
@@ -356,13 +363,13 @@ class TestScrambleTextTransformation:
         Verify that scrambling actually produces different text (not identity).
 
         Given: A scramble map and letter-only text
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: The output is different from the input (at least for letters)
         """
         scramble_map = _make_scramble_map()
         text = "abcdefghijklmnopqrstuvwxyz"
         
-        result = text.translate(scramble_map)
+        result = _scramble_text(text, scramble_map)
         
         assert result != text, (
             "Scrambling produced identical output (all identity mappings)"
@@ -374,7 +381,7 @@ class TestScrambleTextTransformation:
         Verify that mixed-case text has case preserved in each position.
 
         Given: A scramble map and mixed-case text
-        When: We apply str.translate() with the scramble map
+        When: _scramble_text() is called
         Then: Uppercase letters become different uppercase letters
         And:  Lowercase letters become different lowercase letters
         And:  Case structure is preserved
@@ -382,7 +389,7 @@ class TestScrambleTextTransformation:
         scramble_map = _make_scramble_map()
         text = "HeLLo WoRLd"
         
-        result = text.translate(scramble_map)
+        result = _scramble_text(text, scramble_map)
         
         for i, (orig_char, result_char) in enumerate(zip(text, result)):
             if orig_char.isalpha():
