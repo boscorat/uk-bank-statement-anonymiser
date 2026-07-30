@@ -1,0 +1,69 @@
+# publish.yml — build and publish to PyPI when a GitHub Release is published.
+#
+# Triggered when a draft release is promoted to "Published" in the GitHub UI.
+# This is a separate workflow from release.yml so that PyPI publishing only
+# happens after the maintainer has reviewed and approved the release.
+#
+# One-time setup required:
+#   - Create a "pypi" environment in GitHub repo Settings > Environments.
+#   - Register a Trusted Publisher on PyPI (account > Publishing):
+#       Owner: boscorat
+#       Repository: uk-bank-statement-anonymiser
+#       Workflow: publish.yml
+#       Environment: pypi
+
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+permissions: {}  # no workflow-level permissions; each job declares its own
+
+jobs:
+  pypi-publish:
+    name: Build & publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
+        with:
+          enable-cache: false
+
+      - name: Install Python
+        run: uv python install 3.14
+
+      - name: Validate tag matches pyproject.toml version
+        id: version
+        run: |
+          VERSION=$(uv run python -c "
+          import tomllib
+          with open('pyproject.toml', 'rb') as f:
+              print(tomllib.load(f)['project']['version'])
+          ")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "::error::Tag version ($TAG_VERSION) does not match pyproject.toml version ($VERSION)"
+            exit 1
+          fi
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Smoke-test wheel import
+        run: |
+          uv run --isolated --no-project --with dist/*.whl -- \
+            python -c "import bank_statement_anonymiser; print(bank_statement_anonymiser.__version__)"
+
+      - name: Publish to PyPI
+        run: uv publish
