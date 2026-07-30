@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-30
+
+### Added
+
+- docs: update technical diagram and add customisation architecture diagram (#27)
+- Clean up CHANGELOG by removing merged PR entries
+- docs: update CHANGELOG.md for v0.2.0
+
+
+
 ## [0.2.0] - 2026-07-29
 
 ### Added
