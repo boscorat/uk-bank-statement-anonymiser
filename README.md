@@ -14,6 +14,8 @@ This tool scrambles that data while keeping the PDF looking like a real bank sta
 
 ## Quick start
 
+**Using Python (API)**
+
 ```bash
 pip install uk-bank-statement-anonymiser
 ```
@@ -24,7 +26,13 @@ from bank_statement_anonymiser import anonymise_pdf
 anonymise_pdf("statement.pdf", "anonymised.pdf")
 ```
 
-One function. One command. Done.
+**Using the command line**
+
+```bash
+uv run anonymise-pdf statement.pdf
+```
+
+> If you don't have [uv](https://docs.astral.sh/uv/getting-started/installation/), see [Installation](#installation) for pip + virtual environment setup.
 
 ## Important: check before you share
 
@@ -130,21 +138,54 @@ The anonymiser is designed to be extended for other bank formats (e.g. US, EU) o
 
 2. **System configs** — Default replacement rules (`always_anonymise_system.toml`) and protected phrases (`never_anonymise_system.toml`) ship with the package.
 
-3. **User configs** — Optional TOML files passed via `--always-anonymise` / `--never-anonymise` to add custom rules. User replacements override system defaults; protected phrases are merged (union).
+3. **User configs** — Optional TOML files passed via `--always-anonymise` / `--never-anonymise` (CLI) or `always_anonymise_path` / `never_anonymise_path` (Python API) to add custom rules. User replacements override system defaults; protected phrases are merged (union).
 
 > **Regenerating diagrams:** Diagrams are authored in Mermaid (`.mmd` files in `docs/diagrams/`). To regenerate SVG/PNG, install [mermaid-cli](https://pypi.org/project/mermaid-cli/) (`uv add --group dev mermaid-cli`) and run `mmdc -i <input>.mmd -o <output>.svg`.
 
-## CLI usage
+## Installation
+
+### Option 1: uv (recommended)
+
+If you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed, this is the simplest path — no virtual environment setup needed:
 
 ```bash
+uv run anonymise-pdf statement.pdf
+```
+
+uv handles installation and environment isolation automatically. For the Python API:
+
+```python
+from bank_statement_anonymiser import anonymise_pdf
+anonymise_pdf("statement.pdf", "anonymised.pdf")
+```
+
+### Option 2: pip + virtual environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # macOS / Linux
+# .venv\Scripts\activate         # Windows
 pip install uk-bank-statement-anonymiser
 anonymise-pdf statement.pdf
 ```
 
+> **Note:** On Windows, use `.venv\Scripts\activate` instead. If you skip the virtual environment, `anonymise-pdf` may not be found on your PATH.
+
+## CLI usage
+
 ```bash
+anonymise-pdf statement.pdf
 anonymise-pdf statement.pdf -o output.pdf
 anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
 ```
+
+| Flag | Description |
+|------|-------------|
+| `-o`, `--output` | Output path (default: `anonymised_<stem>.pdf` alongside input) |
+| `--always-anonymise` | TOML file with forced replacements |
+| `--never-anonymise` | TOML file with protected phrases |
+
+See [Custom rules](#custom-rules) for TOML file format.
 
 ## Related projects
 
@@ -160,7 +201,7 @@ The most valuable contribution is testing the anonymiser against real bank state
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
 
-## Development
+## Development (for contributors)
 
 ```bash
 git clone https://github.com/boscorat/uk-bank-statement-anonymiser.git
