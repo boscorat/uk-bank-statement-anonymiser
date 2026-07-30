@@ -132,7 +132,7 @@ The anonymiser is designed to be extended for other bank formats (e.g. US, EU) o
 
 3. **User configs** — Optional TOML files passed via `--always-anonymise` / `--never-anonymise` to add custom rules. User replacements override system defaults; protected phrases are merged (union).
 
-> **Regenerating diagrams:** Diagrams are authored in Mermaid (`.mmd` files in `docs/diagrams/`). To regenerate SVG/PNG, install [mermaid-cli](https://pypi.org/project/mermaid-cli/) (`uv add --group docs mermaid-cli`) and run `mmdc -i <input>.mmd -o <output>.svg`.
+> **Regenerating diagrams:** Diagrams are authored in Mermaid (`.mmd` files in `docs/diagrams/`). To regenerate SVG/PNG, install [mermaid-cli](https://pypi.org/project/mermaid-cli/) (`uv add --group dev mermaid-cli`) and run `mmdc -i <input>.mmd -o <output>.svg`.
 
 ## CLI usage
 
