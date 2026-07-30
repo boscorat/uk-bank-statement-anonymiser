@@ -28,11 +28,11 @@ anonymise_pdf("statement.pdf", "anonymised.pdf")
 
 **Using the command line**
 
-```bash
-uv run anonymise-pdf statement.pdf
-```
+~~~bash
+anonymise-pdf statement.pdf
+~~~
 
-> If you don't have [uv](https://docs.astral.sh/uv/getting-started/installation/), see [Installation](#installation) for pip + virtual environment setup.
+> Prefer [uv](https://docs.astral.sh/uv/getting-started/installation/)? See [Installation](#installation) for the uv workflow.
 
 ## Important: check before you share
 
@@ -179,10 +179,7 @@ anonymise-pdf statement.pdf -o output.pdf
 anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
 ```
 
-| Flag | Description |
-|------|-------------|
-| `-o`, `--output` | Output path (default: `anonymised_<stem>.pdf` alongside input) |
-| `--always-anonymise` | TOML file with forced replacements |
+| `-o`, `--output` | Output path (default: `anonymised_<stem><suffix>` alongside input) |
 | `--never-anonymise` | TOML file with protected phrases |
 
 See [Custom rules](#custom-rules) for TOML file format.
