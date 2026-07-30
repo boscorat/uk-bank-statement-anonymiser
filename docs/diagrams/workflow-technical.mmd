@@ -1,0 +1,12 @@
+graph TD
+    A["📄 Original PDF"] --> B["Load configs<br/>system + user TOML merged"]
+    B --> C["Detect numeric IDs<br/>sort codes · account numbers<br/>IBANs · card numbers"]
+    C --> D["Line-aware scan<br/>check protected phrases<br/>check always-anonymise rules"]
+    D --> E{"Font encoding?"}
+    E -->|"Latin-1"| F1["Single-byte<br/>replacement"]
+    E -->|"ToUnicode CMap"| F2["Character code<br/>mapping"]
+    E -->|"Identity-H"| F3["CID font<br/>handling"]
+    F1 --> G["Scramble bytes<br/>with deterministic<br/>replacements"]
+    F2 --> G
+    F3 --> G
+    G --> H["📄 Anonymised PDF<br/>Layout intact"]

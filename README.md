@@ -110,6 +110,8 @@ def anonymise_pdf(
 
 ## How it works
 
+![Anonymisation workflow](https://raw.githubusercontent.com/boscorat/uk-bank-statement-anonymiser/master/docs/diagrams/workflow-technical.svg)
+
 1. **Identify sensitive data** — Detects sort codes, account numbers, IBANs, card numbers, and other patterns. Each gets a deterministic fake replacement so the same data is always replaced consistently across pages.
 
 2. **Protect structural text** — Dates, payment type codes, bank URLs, and configured protected phrases are left unchanged.
@@ -117,6 +119,20 @@ def anonymise_pdf(
 3. **Scramble remaining text** — All other letters are replaced with random alternatives; digits and symbols stay intact. The PDF's layout, fonts, images, and line breaks are preserved.
 
 All processing happens locally via [pikepdf](https://github.com/pikepdf/pikepdf). No network requests, no accounts, no data collection.
+
+### Customisation
+
+The anonymiser is designed to be extended for other bank formats (e.g. US, EU) or non-bank PDFs. Three areas control what gets anonymised:
+
+![Customisation architecture](https://raw.githubusercontent.com/boscorat/uk-bank-statement-anonymiser/master/docs/diagrams/workflow-customization.svg)
+
+1. **Pattern detection** — Regex patterns identify sort codes, account numbers, IBANs, card numbers, dates, amounts, and URLs. Add or modify patterns in the source to support new formats.
+
+2. **System configs** — Default replacement rules (`always_anonymise_system.toml`) and protected phrases (`never_anonymise_system.toml`) ship with the package.
+
+3. **User configs** — Optional TOML files passed via `--always-anonymise` / `--never-anonymise` to add custom rules. User replacements override system defaults; protected phrases are merged (union).
+
+> **Regenerating diagrams:** Diagrams are authored in Mermaid (`.mmd` files in `docs/diagrams/`). To regenerate SVG/PNG, install [mermaid-cli](https://pypi.org/project/mermaid-cli/) (`uv add --group docs mermaid-cli`) and run `mmdc -i <input>.mmd -o <output>.svg`.
 
 ## CLI usage
 
