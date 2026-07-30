@@ -1,0 +1,24 @@
+graph LR
+    subgraph "Area 1: Pattern Detection"
+        P1["Regex patterns<br/>sort codes · account numbers<br/>IBANs · card numbers"]
+        P2["Protected checks<br/>dates · amounts · URLs<br/>payment type codes"]
+    end
+
+    subgraph "Area 2: System Configs"
+        S1["always_anonymise_system.toml<br/>default forced replacements<br/>shipped with package"]
+        S2["never_anonymise_system.toml<br/>default protected phrases<br/>payment codes · headers"]
+    end
+
+    subgraph "Area 3: User Configs"
+        U1["always_anonymise.toml<br/>user replacement rules<br/>overrides system on clash"]
+        U2["never_anonymise.toml<br/>user protected phrases<br/>adds to system set"]
+    end
+
+    P1 -->|"numeric ID map"| PIPE["Processing Pipeline<br/>3-phase per-page<br/>anonymisation"]
+    P2 -->|"protection flags"| PIPE
+    S1 -->|"merged replacements"| PIPE
+    S2 -->|"merged phrases"| PIPE
+    U1 -->|"merged replacements"| PIPE
+    U2 -->|"merged phrases"| PIPE
+
+    PIPE --> OUT["📄 Anonymised PDF"]
