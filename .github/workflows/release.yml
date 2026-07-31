@@ -1,22 +1,14 @@
-# release.yml — build, publish, and create draft release on version tag push.
+# release.yml — create draft GitHub Release and open a CHANGELOG PR on tag push.
 #
-# Triggered by pushing a tag like "v0.1.0".  Two jobs run in sequence:
+# Triggered by pushing a tag like "v0.1.0".  Creates a draft GitHub Release
+# with release notes generated from git log, and opens a PR to update
+# CHANGELOG.md (to avoid pushing directly to a protected master branch).
 #
-#   1. pypi-publish    — build wheel + sdist, publish to PyPI via OIDC.
-#   2. github-release  — create a draft GitHub Release with release notes
-#                        generated from git log, and update CHANGELOG.md.
+# PyPI publishing is handled by a separate workflow (publish.yml) which
+# triggers when the draft release is promoted to "Published".
 #
-# The release is created as a draft. Manually publish it when ready.
 # Release notes and CHANGELOG.md are generated from the same git log output,
 # ensuring they always agree (unless you manually edit the draft notes).
-#
-# One-time setup required:
-#   - Create a "pypi" environment in GitHub repo Settings > Environments.
-#   - Register a Trusted Publisher on PyPI (account > Publishing):
-#       Owner: boscorat
-#       Repository: uk-bank-statement-anonymiser
-#       Workflow: release.yml
-#       Environment: pypi
 
 name: Release
 
@@ -28,80 +20,19 @@ on:
 permissions: {}  # no workflow-level permissions; each job declares its own
 
 jobs:
-  # ── Build wheel + sdist and publish to PyPI ─────────────────────────
-  pypi-publish:
-    name: Build & publish to PyPI
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
-        with:
-          persist-credentials: false
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
-        with:
-          enable-cache: false
-
-      - name: Install Python
-        run: uv python install 3.14
-
-      - name: Validate tag matches pyproject.toml version
-        id: version
-        run: |
-          VERSION=$(uv run python -c "
-          import tomllib
-          with open('pyproject.toml', 'rb') as f:
-              print(tomllib.load(f)['project']['version'])
-          ")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          if [ "$TAG_VERSION" != "$VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match pyproject.toml version ($VERSION)"
-            exit 1
-          fi
-
-      - name: Build sdist and wheel
-        run: uv build
-
-      - name: Smoke-test wheel import
-        run: |
-          uv run --isolated --no-project --with dist/*.whl -- \
-            python -c "import bank_statement_anonymiser; print(bank_statement_anonymiser.__version__)"
-
-      - name: Publish to PyPI
-        run: uv publish
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
-        with:
-          name: python-dists
-          path: dist/
-
-
-  # ── Create draft GitHub Release and update CHANGELOG.md ─────────────
+  # ── Create draft GitHub Release and open CHANGELOG PR ───────────────
   github-release:
     name: Create draft GitHub Release
     runs-on: ubuntu-latest
-    needs: [pypi-publish]
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
         with:
           ref: master
           fetch-depth: 0  # full history needed for git log
-
-      - name: Download Python dists
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
-        with:
-          name: python-dists
-          path: dist/
 
       - name: Generate release notes from git log
         id: notes
@@ -118,9 +49,9 @@ jobs:
             echo "## What's Changed"
             echo ""
             if [ -n "$PREV_TAG" ]; then
-              git log --pretty=format:"- %s" "$PREV_TAG".."$GITHUB_REF_NAME" | grep -v "^- release:"
+              git log --pretty=format:"- %s" "$PREV_TAG".."$GITHUB_REF_NAME" | grep -v "^- release:" | grep -iv "^- Merge "
             else
-              git log --pretty=format:"- %s" "$GITHUB_REF_NAME" | grep -v "^- release:"
+              git log --pretty=format:"- %s" "$GITHUB_REF_NAME" | grep -v "^- release:" | grep -iv "^- Merge "
             fi
             echo ""
             echo ""
@@ -137,7 +68,6 @@ jobs:
         with:
           draft: true
           body: ${{ steps.notes.outputs.notes }}
-          files: dist/*
 
       - name: Update CHANGELOG.md
         run: |
@@ -161,9 +91,14 @@ jobs:
               f.write(content)
           "
 
-      - name: Commit CHANGELOG.md
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md
-          git diff --cached --quiet || git commit -m "docs: update CHANGELOG.md for ${GITHUB_REF_NAME}" && git push
+      - name: Create PR for CHANGELOG.md
+        uses: peter-evans/create-pull-request@4320041ed380b20e97d388d56a7fb4f9b8c20e79  # v7
+        with:
+          commit-message: "docs: update CHANGELOG.md for ${{ github.ref_name }}"
+          branch: "changelog/${{ github.ref_name }}"
+          title: "docs: update CHANGELOG.md for ${{ github.ref_name }}"
+          body: |
+            Automated PR to update CHANGELOG.md with release notes for ${{ github.ref_name }}.
+
+            **Merge this PR before publishing the draft release.**
+          labels: documentation
