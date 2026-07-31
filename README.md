@@ -28,11 +28,12 @@ anonymise_pdf("statement.pdf", "anonymised.pdf")
 
 **Using the command line**
 
-~~~bash
+```bash
+pip install uk-bank-statement-anonymiser
 anonymise-pdf statement.pdf
-~~~
+```
 
-> Prefer [uv](https://docs.astral.sh/uv/getting-started/installation/)? See [Installation](#installation) for the uv workflow.
+> Prefer [uv](https://docs.astral.sh/uv/getting-started/installation/)? See [Installation](#installation) for the `uvx` and `uv tool install` workflows.
 
 ## Important: check before you share
 
@@ -146,13 +147,28 @@ The anonymiser is designed to be extended for other bank formats (e.g. US, EU) o
 
 ### Option 1: uv (recommended)
 
-If you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed, this is the simplest path — no virtual environment setup needed:
+If you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed:
+
+**Run once, no permanent install:**
 
 ```bash
-uv run anonymise-pdf statement.pdf
+uvx --from uk-bank-statement-anonymiser anonymise-pdf statement.pdf
 ```
 
-uv handles installation and environment isolation automatically. For the Python API:
+[uvx](https://docs.astral.sh/uv/guides/tools/) runs the tool in a temporary isolated environment. Nothing is permanently installed.
+
+**Install permanently (makes `anonymise-pdf` available anywhere):**
+
+```bash
+uv tool install uk-bank-statement-anonymiser
+anonymise-pdf statement.pdf
+```
+
+**Use the Python API in your own uv project:**
+
+```bash
+uv add uk-bank-statement-anonymiser
+```
 
 ```python
 from bank_statement_anonymiser import anonymise_pdf
@@ -177,6 +193,7 @@ anonymise-pdf statement.pdf
 anonymise-pdf statement.pdf
 anonymise-pdf statement.pdf -o output.pdf
 anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
+anonymise-pdf statement.pdf --debug     # prints diagnostic info; may expose config values
 ```
 
 | `-o`, `--output` | Output path (default: `anonymised_<stem><suffix>` alongside input) |
