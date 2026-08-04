@@ -95,6 +95,29 @@ User config files override system config on clashes. Both system and user `never
 
 **Do not commit user config files to source control** — they may contain real account numbers or names.
 
+## Retaining transaction descriptions
+
+By default, all text that is not protected or explicitly replaced is scrambled. If you need transaction descriptions to remain readable — for tutorials, reporting, or review — use the `retain_descriptions` flag.
+
+This disables the default letter-scrambling so that only `always_anonymise` replacements and numeric ID substitutions (sort codes, account numbers, card numbers) are applied. Everything else — including merchant names, descriptions, customer names, and addresses — is left untouched.
+
+```python
+anonymise_pdf(
+    "statement.pdf",
+    "output.pdf",
+    always_anonymise_path="my_replacements.toml",
+    retain_descriptions=True,
+)
+```
+
+```bash
+anonymise-pdf statement.pdf -o output.pdf \
+    --always-anonymise my_replacements.toml \
+    --retain-descriptions
+```
+
+`retain_descriptions` **requires** a user `always_anonymise.toml` — without it, sensitive names and addresses would remain un-anonymised. The tool raises a `ValueError` if you pass `retain_descriptions=True` without an `always_anonymise_path`.
+
 ## API reference
 
 ```python
@@ -103,6 +126,7 @@ def anonymise_pdf(
     output_path: str | Path | None = None,
     always_anonymise_path: str | Path | None = None,
     never_anonymise_path: str | Path | None = None,
+    retain_descriptions: bool = False,
     debug: bool = False,
 ) -> Path
 ```
@@ -113,9 +137,11 @@ def anonymise_pdf(
 | `output_path` | Output path. If omitted, writes `anonymised_<stem><suffix>` alongside the input |
 | `always_anonymise_path` | User replacement rules (optional) |
 | `never_anonymise_path` | User protected phrases (optional) |
+| `retain_descriptions` | Disable default letter-scrambling; only apply `always_anonymise` replacements and numeric IDs (default `False`). Requires `always_anonymise_path`. |
 | `debug` | Print diagnostic info to stdout (default `False`) |
 | **Returns** | Absolute path to the output PDF |
 | **Raises** | `FileNotFoundError` if `input_path` does not exist |
+| **Raises** | `ValueError` if `retain_descriptions` is `True` but no `always_anonymise_path` was provided |
 
 ## How it works
 
@@ -193,11 +219,17 @@ anonymise-pdf statement.pdf
 anonymise-pdf statement.pdf
 anonymise-pdf statement.pdf -o output.pdf
 anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
+anonymise-pdf statement.pdf --always-anonymise rules.toml --retain-descriptions
 anonymise-pdf statement.pdf --debug     # prints diagnostic info; may expose config values
 ```
 
+| Flag | Description |
+|---|---|
 | `-o`, `--output` | Output path (default: `anonymised_<stem><suffix>` alongside input) |
+| `--always-anonymise` | TOML file with forced replacements |
 | `--never-anonymise` | TOML file with protected phrases |
+| `--retain-descriptions` | Disable letter-scrambling; only apply `always_anonymise` rules and numeric IDs (requires `--always-anonymise`) |
+| `--debug` | Print diagnostic info to stdout |
 
 See [Custom rules](#custom-rules) for TOML file format.
 
