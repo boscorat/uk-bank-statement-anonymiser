@@ -406,7 +406,7 @@ def _is_identity_h_font(f: pikepdf.Dictionary) -> bool:
         encoding_str = str(encoding)
         # Handle both /Identity-H and /Identity_H (pikepdf uses underscore)
         return encoding_str in ("/Identity-H", "Identity-H", "/Identity_H", "Identity_H")
-    except AttributeError, TypeError, KeyError:
+    except (AttributeError, TypeError, KeyError):
         return False
 
 
@@ -1162,7 +1162,7 @@ def _build_font_maps(
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except AttributeError, KeyError, TypeError:
+    except (AttributeError, KeyError, TypeError):
         return forward_maps, reverse_maps, frozenset()
 
     for fname in font_dict:
@@ -1186,7 +1186,7 @@ def _build_font_maps(
                     rev[uc] = gb
             forward_maps[str(fname)] = fwd
             reverse_maps[str(fname)] = rev
-        except AttributeError, KeyError, TypeError:
+        except (AttributeError, KeyError, TypeError):
             continue
 
     return forward_maps, reverse_maps, frozenset(bold_fonts)
@@ -1213,7 +1213,7 @@ def _build_font_maps_v2(
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except AttributeError, KeyError, TypeError:
+    except (AttributeError, KeyError, TypeError):
         return font_encodings, reverse_maps, frozenset()
 
     for fname in font_dict:
@@ -1248,7 +1248,7 @@ def _build_font_maps_v2(
                 is_identity_h=is_identity_h,
             )
             reverse_maps[fname_str] = rev
-        except AttributeError, KeyError, TypeError:
+        except (AttributeError, KeyError, TypeError):
             continue
 
     return font_encodings, reverse_maps, frozenset(bold_fonts)
