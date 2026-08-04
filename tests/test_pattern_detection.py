@@ -62,22 +62,22 @@ class TestDateRe:
         "31 Mar 24",
         "1 February 2024",
         "28 Feb 24",
-        "9 sep 23",          # lowercase
-        "09 SEP 2023",       # uppercase
+        "9 sep 23",  # lowercase
+        "09 SEP 2023",  # uppercase
         "15 July 2024",
     ]
 
     SHOULD_NOT_MATCH = [
-        "Jan 25",            # missing day
-        "23 Jan",            # missing year
-        "2024-01-23",        # ISO format
-        "23/01/2024",        # DD/MM/YYYY
-        "23 January",        # missing year
-        "Jan 2025",          # month-year only
+        "Jan 25",  # missing day
+        "23 Jan",  # missing year
+        "2024-01-23",  # ISO format
+        "23/01/2024",  # DD/MM/YYYY
+        "23 January",  # missing year
+        "Jan 2025",  # month-year only
         "hello",
         "",
-        "23 Xyz 25",         # invalid month
-        "23  Jan 25",        # double space
+        "23 Xyz 25",  # invalid month
+        "23  Jan 25",  # double space
     ]
 
     @pytest.mark.unit
@@ -102,16 +102,16 @@ class TestDateDayMonthRe:
         "1 Mar",
         "28 Feb",
         "31 December",
-        "9 oct",             # lowercase
-        "1 AUGUST",          # uppercase
+        "9 oct",  # lowercase
+        "1 AUGUST",  # uppercase
     ]
 
     SHOULD_NOT_MATCH = [
-        "Jan",               # month only
-        "03 Jan 25",         # has year
-        "03/01",             # slash format
-        "03-Jan",            # hyphen format
-        "03 Xyz",            # invalid month
+        "Jan",  # month only
+        "03 Jan 25",  # has year
+        "03/01",  # slash format
+        "03-Jan",  # hyphen format
+        "03 Xyz",  # invalid month
         "hello",
         "",
     ]
@@ -137,17 +137,17 @@ class TestDateCompactRe:
         "15 June2025",
         "1 Jan24",
         "31 Mar2024",
-        "9 sep23",           # lowercase
-        "03 AUG99",          # uppercase 2-digit year
+        "9 sep23",  # lowercase
+        "03 AUG99",  # uppercase 2-digit year
         "1 February2024",
     ]
 
     SHOULD_NOT_MATCH = [
-        "11 Dec 21",         # has space before year (normal _DATE_RE territory)
-        "Dec21",             # no day
-        "11Dec21",           # no space after day
-        "11 Dec",            # no year
-        "11 Xyz21",          # invalid month
+        "11 Dec 21",  # has space before year (normal _DATE_RE territory)
+        "Dec21",  # no day
+        "11Dec21",  # no space after day
+        "11 Dec",  # no year
+        "11 Xyz21",  # invalid month
         "",
     ]
 
@@ -170,16 +170,16 @@ class TestDateRangeRe:
     SHOULD_MATCH = [
         "24 Aug 2019 to 24 Sep 2019",
         "16 May 2025 to 15 June 2025",
-        "1 Jan to 31 Jan",           # both sides year-less
-        "1 Jan 25 to 31 Jan 25",     # both sides 2-digit year
-        "1 Jan 2025 to 31 Jan 2025", # both sides 4-digit year
-        "1 jan 25 to 31 jan 25",     # lowercase
+        "1 Jan to 31 Jan",  # both sides year-less
+        "1 Jan 25 to 31 Jan 25",  # both sides 2-digit year
+        "1 Jan 2025 to 31 Jan 2025",  # both sides 4-digit year
+        "1 jan 25 to 31 jan 25",  # lowercase
     ]
 
     SHOULD_NOT_MATCH = [
-        "24 Aug 2019 24 Sep 2019",   # missing "to"
-        "24 Aug 2019",               # single date
-        "Aug 2019 to Sep 2019",      # no day
+        "24 Aug 2019 24 Sep 2019",  # missing "to"
+        "24 Aug 2019",  # single date
+        "Aug 2019 to Sep 2019",  # no day
         "2019-08-24 to 2019-09-24",  # ISO format
         "",
     ]
@@ -206,19 +206,40 @@ class TestMonthNameRe:
     """Tests for _MONTH_NAME_RE: standalone 3-letter abbreviation or full name."""
 
     SHOULD_MATCH = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
-        "Aug", "Sep", "Oct", "Nov", "Dec",
-        "January", "February", "March", "April", "June",
-        "July", "August", "September", "October", "November", "December",
-        "jan", "JAN", "JANUARY",  # case insensitive
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+        "January",
+        "February",
+        "March",
+        "April",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+        "jan",
+        "JAN",
+        "JANUARY",  # case insensitive
     ]
 
     SHOULD_NOT_MATCH = [
-        "Ja",        # too short
-        "Janu",      # truncated
-        "Janx",      # invalid suffix
-        "15 Jan",    # has day
-        "Jan 25",    # has year
+        "Ja",  # too short
+        "Janu",  # truncated
+        "Janx",  # invalid suffix
+        "15 Jan",  # has day
+        "Jan 25",  # has year
         "hello",
         "",
         "1",
@@ -244,17 +265,17 @@ class TestMonthCompactRe:
         "Dec21",
         "June21",
         "Jan99",
-        "july25",    # lowercase
-        "AUG24",     # uppercase
+        "july25",  # lowercase
+        "AUG24",  # uppercase
         "September23",
     ]
 
     SHOULD_NOT_MATCH = [
-        "Dec 21",    # has space before year
-        "Dec2021",   # 4-digit year
-        "De21",      # truncated month
-        "21",        # year only
-        "Decxx",     # non-digit year
+        "Dec 21",  # has space before year
+        "Dec2021",  # 4-digit year
+        "De21",  # truncated month
+        "21",  # year only
+        "Decxx",  # non-digit year
         "",
     ]
 
@@ -290,18 +311,18 @@ class TestNumericRe:
         "CR",
         "D",
         "£0.00",
-        "12 34",          # digit with space
-        "1234.56 CR",     # space before CR
+        "12 34",  # digit with space
+        "1234.56 CR",  # space before CR
         "-1234.56",
-        "1.2.3",          # dots pass (pattern is permissive)
+        "1.2.3",  # dots pass (pattern is permissive)
     ]
 
     SHOULD_NOT_MATCH = [
         "hello",
         "Amazon Ltd",
-        "12abc",          # letter in middle (not CR suffix)
+        "12abc",  # letter in middle (not CR suffix)
         "abc123",
-        "1234CR5",        # CR not at end
+        "1234CR5",  # CR not at end
         "",
     ]
 
@@ -322,18 +343,18 @@ class TestRefNumberRe:
     """Tests for _REF_NUMBER_RE: reference numbers starting with digit, ≥5 chars."""
 
     SHOULD_MATCH = [
-        "12345",           # 5 digits minimum
-        "12-345",          # 5 chars with hyphen
-        "123456789",       # long reference
-        "12345-6789",      # hyphenated reference
-        "1-2-3-4",         # multi-hyphen
+        "12345",  # 5 digits minimum
+        "12-345",  # 5 chars with hyphen
+        "123456789",  # long reference
+        "12345-6789",  # hyphenated reference
+        "1-2-3-4",  # multi-hyphen
     ]
 
     SHOULD_NOT_MATCH = [
-        "1234",            # only 4 chars (pattern requires ≥5 via \d[\d\-]{4,})
-        "abcde",           # no leading digit
-        "1abc5",           # non-digit/hyphen chars in middle
-        "12 345",          # space not hyphen
+        "1234",  # only 4 chars (pattern requires ≥5 via \d[\d\-]{4,})
+        "abcde",  # no leading digit
+        "1abc5",  # non-digit/hyphen chars in middle
+        "12 345",  # space not hyphen
         "",
     ]
 
@@ -371,14 +392,14 @@ class TestCompoundTypeDescRe:
         ("CCSpend", "CC", "Spend"),
         ("OBPPayee", "OBP", "Payee"),
         (")))Marker", ")))", "Marker"),  # TSB internal marker prefix (3 closing parens)
-        ("bpamazon", "bp", "amazon"),    # lowercase — description starts with any letter
-        ("BPamazon", "BP", "amazon"),    # description starts with lowercase letter — valid
+        ("bpamazon", "bp", "amazon"),  # lowercase — description starts with any letter
+        ("BPamazon", "BP", "amazon"),  # description starts with lowercase letter — valid
     ]
 
     SHOULD_NOT_MATCH = [
-        "Amazon",         # no payment-type prefix
-        "123Amazon",      # starts with digit
-        "BP",             # prefix only, no description
+        "Amazon",  # no payment-type prefix
+        "123Amazon",  # starts with digit
+        "BP",  # prefix only, no description
         "",
     ]
 
@@ -388,14 +409,8 @@ class TestCompoundTypeDescRe:
         """_COMPOUND_TYPE_DESC_RE should match and capture type code and description."""
         m = _COMPOUND_TYPE_DESC_RE.match(full)
         assert m is not None, f"Expected match for: {full!r}"
-        assert m.group(1).upper() == code.upper(), (
-            f"Group 1 (type code) mismatch for {full!r}: "
-            f"expected {code!r}, got {m.group(1)!r}"
-        )
-        assert m.group(2) == desc, (
-            f"Group 2 (description) mismatch for {full!r}: "
-            f"expected {desc!r}, got {m.group(2)!r}"
-        )
+        assert m.group(1).upper() == code.upper(), f"Group 1 (type code) mismatch for {full!r}: expected {code!r}, got {m.group(1)!r}"
+        assert m.group(2) == desc, f"Group 2 (description) mismatch for {full!r}: expected {desc!r}, got {m.group(2)!r}"
 
     @pytest.mark.unit
     @pytest.mark.parametrize("text", SHOULD_NOT_MATCH)
@@ -426,11 +441,11 @@ class TestUrlRe:
     ]
 
     SHOULD_NOT_MATCH = [
-        "gov.uk",         # bare TLD only — no subdomain or path, so no match
+        "gov.uk",  # bare TLD only — no subdomain or path, so no match
         "hello world",
         "Amazon Ltd",
         "40-37-28",
-        "example",        # no TLD
+        "example",  # no TLD
         "",
     ]
 
@@ -518,43 +533,31 @@ class TestIsBuiltinProtected:
     @pytest.mark.parametrize("text", PROTECTED)
     def test_is_protected(self, text):
         """_is_builtin_protected should return True for protected patterns."""
-        assert _is_builtin_protected(text), (
-            f"Expected True (protected) for: {text!r}"
-        )
+        assert _is_builtin_protected(text), f"Expected True (protected) for: {text!r}"
 
     @pytest.mark.unit
     @pytest.mark.parametrize("text", NOT_PROTECTED)
     def test_is_not_protected(self, text):
         """_is_builtin_protected should return False for scramblable text."""
-        assert not _is_builtin_protected(text), (
-            f"Expected False (not protected) for: {text!r}"
-        )
+        assert not _is_builtin_protected(text), f"Expected False (not protected) for: {text!r}"
 
     @pytest.mark.unit
     def test_strips_leading_trailing_spaces(self):
         """_is_builtin_protected should strip surrounding whitespace before matching."""
-        assert _is_builtin_protected("  23 Jan 25  "), (
-            "Should match date even with surrounding spaces"
-        )
-        assert _is_builtin_protected("  £1,234.56  "), (
-            "Should match amount even with surrounding spaces"
-        )
+        assert _is_builtin_protected("  23 Jan 25  "), "Should match date even with surrounding spaces"
+        assert _is_builtin_protected("  £1,234.56  "), "Should match amount even with surrounding spaces"
 
     @pytest.mark.unit
     def test_single_char_always_protected(self):
         """Any single character must be protected (len < 2 after strip)."""
         for ch in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789":
-            assert _is_builtin_protected(ch), (
-                f"Single char {ch!r} should be protected"
-            )
+            assert _is_builtin_protected(ch), f"Single char {ch!r} should be protected"
 
     @pytest.mark.unit
     def test_two_char_letters_not_auto_protected(self):
         """Two-character letter strings should NOT be auto-protected (go through pattern checks)."""
         # "AB" has no pattern match, so should not be protected
-        assert not _is_builtin_protected("AB"), (
-            "Two-letter string 'AB' should not be auto-protected"
-        )
+        assert not _is_builtin_protected("AB"), "Two-letter string 'AB' should not be auto-protected"
 
     @pytest.mark.unit
     def test_numeric_re_variants_all_protected(self):
@@ -569,9 +572,7 @@ class TestIsBuiltinProtected:
             "999.99D",
         ]
         for amount in amounts:
-            assert _is_builtin_protected(amount), (
-                f"Amount {amount!r} should be protected"
-            )
+            assert _is_builtin_protected(amount), f"Amount {amount!r} should be protected"
 
 
 # ============================================================================
@@ -585,17 +586,17 @@ class TestSortCodeRe:
     SHOULD_MATCH = [
         "40-37-28",
         "40 37 28",
-        "40-37 28",      # mixed separators
+        "40-37 28",  # mixed separators
         "00-00-00",
         "99-99-99",
     ]
 
     SHOULD_NOT_MATCH = [
-        "403728",        # no separators — bare 6 digits not matched
-        "4-3-2",         # single digits per group
-        "400-37-28",     # 3 digits in first group
-        "40.37.28",      # dot separators
-        "40-37-2",       # only 1 digit in last group
+        "403728",  # no separators — bare 6 digits not matched
+        "4-3-2",  # single digits per group
+        "400-37-28",  # 3 digits in first group
+        "40.37.28",  # dot separators
+        "40-37-2",  # only 1 digit in last group
         "hello",
     ]
 
@@ -630,10 +631,10 @@ class TestAccountRe:
     ]
 
     SHOULD_NOT_MATCH = [
-        "1234567",     # 7 digits
-        "123456789",   # 9 digits (word-boundary means this won't match the 8)
-        "1234-5678",   # hyphens — not a bare 8-digit run
-        "abcdefgh",    # letters
+        "1234567",  # 7 digits
+        "123456789",  # 9 digits (word-boundary means this won't match the 8)
+        "1234-5678",  # hyphens — not a bare 8-digit run
+        "abcdefgh",  # letters
     ]
 
     @pytest.mark.unit
@@ -644,9 +645,7 @@ class TestAccountRe:
     @pytest.mark.unit
     def test_account_no_match_nine_digits(self):
         """Nine consecutive digits should not produce an 8-digit match (word boundary)."""
-        assert not _ACCOUNT_RE.fullmatch("123456789"), (
-            "9-digit string should not fullmatch 8-digit pattern"
-        )
+        assert not _ACCOUNT_RE.fullmatch("123456789"), "9-digit string should not fullmatch 8-digit pattern"
 
     @pytest.mark.unit
     def test_account_extracts_group(self):
@@ -667,10 +666,10 @@ class TestSortAcctRe:
 
     SHOULD_NOT_MATCH = [
         "40-37-28 31243535",  # sort code with hyphens
-        "403728-31243535",    # hyphen separator
-        "40372831243535",     # no space
-        "403728 3124353",     # account only 7 digits
-        "40372 31243535",     # sort code only 5 digits
+        "403728-31243535",  # hyphen separator
+        "40372831243535",  # no space
+        "403728 3124353",  # account only 7 digits
+        "40372 31243535",  # sort code only 5 digits
     ]
 
     @pytest.mark.unit
@@ -703,11 +702,11 @@ class TestCardRe:
     ]
 
     SHOULD_NOT_MATCH = [
-        "3333-2222-1111-0000",   # hyphens
-        "3333222211110000",      # no spaces
-        "3333 2222 1111 000",    # last group only 3 digits
-        "333 2222 1111 0000",    # first group only 3 digits
-        "3333 2222 1111",        # only 3 groups
+        "3333-2222-1111-0000",  # hyphens
+        "3333222211110000",  # no spaces
+        "3333 2222 1111 000",  # last group only 3 digits
+        "333 2222 1111 0000",  # first group only 3 digits
+        "3333 2222 1111",  # only 3 groups
         "hello",
     ]
 
@@ -742,12 +741,12 @@ class TestCardMicrRe:
     ]
 
     SHOULD_NOT_MATCH = [
-        "5402-225003072770",      # hyphen
-        "54022250030727700",      # no space
-        "5402 22500307277",       # 11-digit second group
-        "5402 2250030727700",     # 13-digit second group
-        "542 225003072770",       # 3-digit first group
-        "3333 2222 1111 0000",    # 4x4 card format instead
+        "5402-225003072770",  # hyphen
+        "54022250030727700",  # no space
+        "5402 22500307277",  # 11-digit second group
+        "5402 2250030727700",  # 13-digit second group
+        "542 225003072770",  # 3-digit first group
+        "3333 2222 1111 0000",  # 4x4 card format instead
     ]
 
     @pytest.mark.unit
@@ -771,9 +770,9 @@ class TestMicrLineRe:
     ]
 
     SHOULD_NOT_MATCH = [
-        "5402225003072770< 774831+< 73   X",   # missing leading <
-        "<540222500307277< 774831+< 73   X",   # only 15 digits
-        "<54022250030727700< 774831+< 73   X", # 17 digits
+        "5402225003072770< 774831+< 73   X",  # missing leading <
+        "<540222500307277< 774831+< 73   X",  # only 15 digits
+        "<54022250030727700< 774831+< 73   X",  # 17 digits
         "hello",
         "",
     ]
@@ -803,14 +802,14 @@ class TestIbanFullRe:
     SHOULD_MATCH = [
         "VN72JNEB40372831243535",
         "GB82WEST12345698765432",
-        "A12345678901234",          # minimal: one letter + 14 digits
+        "A12345678901234",  # minimal: one letter + 14 digits
     ]
 
     SHOULD_NOT_MATCH = [
-        "40372831243535",           # no letter prefix
-        "GB82",                     # too short, no 14-digit tail
-        "GBXYZ",                    # letters only
-        "12345678901234",           # 14 digits but no letter prefix
+        "40372831243535",  # no letter prefix
+        "GB82",  # too short, no 14-digit tail
+        "GBXYZ",  # letters only
+        "12345678901234",  # 14 digits but no letter prefix
         "",
     ]
 
@@ -841,16 +840,16 @@ class TestIbanSpacedRe:
     SHOULD_MATCH = [
         "GB19 NWBK 6016 2400 3980 04",
         "GB82 WEST 1234 5698 7654 32",
-        "gb19 nwbk 6016 2400 3980 04",   # lowercase
+        "gb19 nwbk 6016 2400 3980 04",  # lowercase
     ]
 
     SHOULD_NOT_MATCH = [
-        "GB19NWBK60162400398004",         # no spaces
-        "GB19 NWBK 6016 2400 3980",       # missing last group
-        "G19 NWBK 6016 2400 3980 04",     # country code too short
-        "GB19 NWB 6016 2400 3980 04",     # bank code only 3 letters
-        "GB19 NWBK 6016 2400 3980 0",     # last group only 1 digit
-        "GB19 NWBK 6016 2400 3980 044",   # last group 3 digits
+        "GB19NWBK60162400398004",  # no spaces
+        "GB19 NWBK 6016 2400 3980",  # missing last group
+        "G19 NWBK 6016 2400 3980 04",  # country code too short
+        "GB19 NWB 6016 2400 3980 04",  # bank code only 3 letters
+        "GB19 NWBK 6016 2400 3980 0",  # last group only 1 digit
+        "GB19 NWBK 6016 2400 3980 044",  # last group 3 digits
         "",
     ]
 
@@ -885,9 +884,9 @@ class TestIbanTailRe:
     ]
 
     SHOULD_NOT_MATCH = [
-        "4037283124353",     # 13 digits
-        "403728312435350",   # 15 digits
-        "4037283124353X",    # letter at end
+        "4037283124353",  # 13 digits
+        "403728312435350",  # 15 digits
+        "4037283124353X",  # letter at end
         "hello",
         "",
     ]
@@ -900,9 +899,7 @@ class TestIbanTailRe:
     @pytest.mark.unit
     def test_iban_tail_no_fullmatch_on_15_digits(self):
         """15 consecutive digits should not fullmatch the 14-digit pattern."""
-        assert not _IBAN_TAIL_RE.fullmatch("403728312435350"), (
-            "15-digit string should not fullmatch _IBAN_TAIL_RE"
-        )
+        assert not _IBAN_TAIL_RE.fullmatch("403728312435350"), "15-digit string should not fullmatch _IBAN_TAIL_RE"
 
     @pytest.mark.unit
     def test_iban_tail_captures_digits(self):

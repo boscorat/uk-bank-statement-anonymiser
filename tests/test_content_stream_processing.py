@@ -65,13 +65,7 @@ def _tj(text: str, font: str = "/F1") -> bytes:
     encoded = text.encode("latin-1")
     # pikepdf literal string syntax: (text)
     escaped = encoded.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
-    return (
-        b"BT\n"
-        + font.encode() + b" 12 Tf\n"
-        + b"50 750 Td\n"
-        + b"(" + escaped + b") Tj\n"
-        + b"ET\n"
-    )
+    return b"BT\n" + font.encode() + b" 12 Tf\n" + b"50 750 Td\n" + b"(" + escaped + b") Tj\n" + b"ET\n"
 
 
 def _multi_tj(*texts: str, font: str = "/F1") -> bytes:
@@ -258,9 +252,7 @@ class TestCollectFragmentsBasic:
         frags = _collect_fragments(page, {})
 
         assert len(frags) >= 1
-        assert frags[0].font == "/F1", (
-            f"Expected font '/F1', got {frags[0].font!r}"
-        )
+        assert frags[0].font == "/F1", f"Expected font '/F1', got {frags[0].font!r}"
 
     @pytest.mark.unit
     def test_empty_tj_operand_not_collected(self):
@@ -278,9 +270,7 @@ class TestCollectFragmentsBasic:
         decoded = [f.decoded for f in frags]
         assert "Hello" in decoded, "Non-empty Tj should still be collected"
         # There should be no fragment with empty decoded text
-        assert all(f.decoded != "" for f in frags), (
-            "Empty Tj operand should not produce a fragment"
-        )
+        assert all(f.decoded != "" for f in frags), "Empty Tj operand should not produce a fragment"
 
     @pytest.mark.unit
     def test_collects_tj_array_fragments(self):
@@ -292,11 +282,7 @@ class TestCollectFragmentsBasic:
         Then: Two fragments are collected (one per string; numbers are skipped)
         """
         # TJ array: [(Hello) 20 (World)] — 20 is kerning, not text
-        content = (
-            b"BT\n/F1 12 Tf\n50 750 Td\n"
-            b"[(Hello) 20 (World)] TJ\n"
-            b"ET\n"
-        )
+        content = b"BT\n/F1 12 Tf\n50 750 Td\n[(Hello) 20 (World)] TJ\nET\n"
         page, _ = _make_page_with_content(content)
         frags = _collect_fragments(page, {})
 
@@ -333,9 +319,7 @@ class TestCollectFragmentsBasic:
         frags = _collect_fragments(page, {})
 
         assert len(frags) >= 1
-        assert frags[0].raw == b"Hi", (
-            f"Expected raw bytes b'Hi', got {frags[0].raw!r}"
-        )
+        assert frags[0].raw == b"Hi", f"Expected raw bytes b'Hi', got {frags[0].raw!r}"
 
     @pytest.mark.unit
     def test_fragment_is_namedtuple(self):
@@ -365,15 +349,7 @@ class TestCollectFragmentsBasic:
         Then: Fragments before the switch have .font == '/F1'
         And:  Fragments after the switch have .font == '/F2'
         """
-        content = (
-            b"BT\n"
-            b"/F1 12 Tf\n"
-            b"50 750 Td\n"
-            b"(First) Tj\n"
-            b"/F2 12 Tf\n"
-            b"(Second) Tj\n"
-            b"ET\n"
-        )
+        content = b"BT\n/F1 12 Tf\n50 750 Td\n(First) Tj\n/F2 12 Tf\n(Second) Tj\nET\n"
         page, _ = _make_page_with_content(content)
         frags = _collect_fragments(page, {})
 
@@ -397,9 +373,7 @@ class TestCollectFragmentsBasic:
         frags = _collect_fragments(page, forward_maps)
 
         assert len(frags) >= 1
-        assert frags[0].decoded == "X", (
-            f"Expected forward-mapped 'X', got {frags[0].decoded!r}"
-        )
+        assert frags[0].decoded == "X", f"Expected forward-mapped 'X', got {frags[0].decoded!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -484,11 +458,7 @@ class TestRewritePageContentStream:
         assert changed is True
 
         instructions = list(pikepdf.parse_content_stream(page))
-        texts = [
-            bytes(ops[0]).decode("latin-1")
-            for ops, op in instructions
-            if str(op) == "Tj" and ops
-        ]
+        texts = [bytes(ops[0]).decode("latin-1") for ops, op in instructions if str(op) == "Tj" and ops]
         assert "Aaa" in texts, f"First replacement missing: {texts}"
         assert "Bbb" in texts, f"Second replacement missing: {texts}"
 
@@ -502,11 +472,7 @@ class TestRewritePageContentStream:
         When: _rewrite_page_content_stream() is called
         Then: Returns True and the TJ element is replaced
         """
-        content = (
-            b"BT\n/F1 12 Tf\n50 750 Td\n"
-            b"[(Hello)] TJ\n"
-            b"ET\n"
-        )
+        content = b"BT\n/F1 12 Tf\n50 750 Td\n[(Hello)] TJ\nET\n"
         page, pdf = _make_page_with_content(content)
         pairs = [(b"Hello", b"Xyzzy")]
         changed = _rewrite_page_content_stream(page, pdf, pairs)
@@ -518,9 +484,7 @@ class TestRewritePageContentStream:
             if str(operator) == "TJ" and operands:
                 for item in operands[0]:
                     if isinstance(item, pikepdf.String):
-                        assert bytes(item) == b"Xyzzy", (
-                            f"TJ element not replaced: {bytes(item)!r}"
-                        )
+                        assert bytes(item) == b"Xyzzy", f"TJ element not replaced: {bytes(item)!r}"
 
     @pytest.mark.unit
     def test_exact_bytes_match_only(self):
@@ -536,9 +500,7 @@ class TestRewritePageContentStream:
         pairs = [(b"Hello", b"Xyzzy")]
         changed = _rewrite_page_content_stream(page, pdf, pairs)
 
-        assert changed is False, (
-            "Partial match should not trigger replacement (exact bytes only)"
-        )
+        assert changed is False, "Partial match should not trigger replacement (exact bytes only)"
 
     @pytest.mark.unit
     def test_tj_kerning_numbers_in_array_preserved(self):
@@ -550,11 +512,7 @@ class TestRewritePageContentStream:
         When: _rewrite_page_content_stream() is called
         Then: The kerning number 20 is preserved as-is
         """
-        content = (
-            b"BT\n/F1 12 Tf\n50 750 Td\n"
-            b"[(Hello) 20 (World)] TJ\n"
-            b"ET\n"
-        )
+        content = b"BT\n/F1 12 Tf\n50 750 Td\n[(Hello) 20 (World)] TJ\nET\n"
         page, pdf = _make_page_with_content(content)
         pairs = [(b"Hello", b"Xyzzy")]
         _rewrite_page_content_stream(page, pdf, pairs)
@@ -566,13 +524,8 @@ class TestRewritePageContentStream:
                 arr = operands[0]
                 items = list(arr)
                 # Should have 3 items: string, integer, string
-                non_string = [
-                    item for item in items
-                    if not isinstance(item, pikepdf.String)
-                ]
-                assert len(non_string) == 1, (
-                    f"Kerning number should be preserved: {items}"
-                )
+                non_string = [item for item in items if not isinstance(item, pikepdf.String)]
+                assert len(non_string) == 1, f"Kerning number should be preserved: {items}"
 
 
 # ---------------------------------------------------------------------------
@@ -594,9 +547,7 @@ class TestCharrunPrepass:
         Then: Returns False — the charrun is frozen and no replacements are made
         """
         phrase = "BALANCEBROUGHTFORWARD"
-        assert phrase in _PROTECTED_CHARRUN_PHRASES, (
-            f"'{phrase}' must be in _PROTECTED_CHARRUN_PHRASES for this test"
-        )
+        assert phrase in _PROTECTED_CHARRUN_PHRASES, f"'{phrase}' must be in _PROTECTED_CHARRUN_PHRASES for this test"
 
         content = _charrun(phrase)
         page, pdf = _make_page_with_content(content)
@@ -605,9 +556,7 @@ class TestCharrunPrepass:
         pairs = [(ch.encode("latin-1"), b"X") for ch in set(phrase) if ch.isalpha()]
         changed = _rewrite_page_content_stream(page, pdf, pairs)
 
-        assert changed is False, (
-            "Charrun phrase should be frozen — no letters should be replaced"
-        )
+        assert changed is False, "Charrun phrase should be frozen — no letters should be replaced"
 
     @pytest.mark.unit
     def test_protects_balance_carried_forward_charrun(self):
@@ -645,9 +594,7 @@ class TestCharrunPrepass:
         changed = _rewrite_page_content_stream(page, pdf, pairs)
 
         # Full-word Tj is not a charrun so it CAN be replaced
-        assert changed is True, (
-            "Multi-char Tj for protected phrase should still be replaceable"
-        )
+        assert changed is True, "Multi-char Tj for protected phrase should still be replaceable"
 
     @pytest.mark.unit
     def test_partial_charrun_not_protected(self):
@@ -667,9 +614,7 @@ class TestCharrunPrepass:
         changed = _rewrite_page_content_stream(page, pdf, pairs)
 
         # 'BALANCE' is not in _PROTECTED_CHARRUN_PHRASES so B should be replaced
-        assert changed is True, (
-            "Partial charrun should not be frozen (incomplete protected phrase)"
-        )
+        assert changed is True, "Partial charrun should not be frozen (incomplete protected phrase)"
 
     @pytest.mark.unit
     def test_charrun_mixed_with_other_text(self):
@@ -710,14 +655,7 @@ class TestLineBreakOperators:
         When: _collect_fragments() is called
         Then: Both fragments are collected (Td creates a line break but doesn't skip text)
         """
-        content = (
-            b"BT\n/F1 12 Tf\n"
-            b"50 750 Td\n"
-            b"(First) Tj\n"
-            b"0 -20 Td\n"
-            b"(Second) Tj\n"
-            b"ET\n"
-        )
+        content = b"BT\n/F1 12 Tf\n50 750 Td\n(First) Tj\n0 -20 Td\n(Second) Tj\nET\n"
         page, _ = _make_page_with_content(content)
         frags = _collect_fragments(page, {})
 
@@ -734,14 +672,7 @@ class TestLineBreakOperators:
         When: _collect_fragments() is called
         Then: Both fragments are collected
         """
-        content = (
-            b"BT\n/F1 12 Tf\n"
-            b"50 750 Td\n"
-            b"(First) Tj\n"
-            b"T*\n"
-            b"(Second) Tj\n"
-            b"ET\n"
-        )
+        content = b"BT\n/F1 12 Tf\n50 750 Td\n(First) Tj\nT*\n(Second) Tj\nET\n"
         page, _ = _make_page_with_content(content)
         frags = _collect_fragments(page, {})
 
@@ -863,10 +794,13 @@ class TestEdgeCasesContentStream:
         # "firstsecond" would match if fragments accumulated on one line
         never_cfg = _NeverAnonymiseConfig(phrases=frozenset({"firstsecond"}))
         pairs = _build_scramble_bytes_pairs(
-            page, scramble_map,
+            page,
+            scramble_map,
             _AlwaysAnonymiseConfig(replacements={}),
             never_cfg,
-            font_encodings={}, forward_maps={}, reverse_maps={},
+            font_encodings={},
+            forward_maps={},
+            reverse_maps={},
             bold_fonts=frozenset(),
         )
 
@@ -905,10 +839,13 @@ class TestEdgeCasesContentStream:
         # "firstsecond" matches if fragments accumulate on one line
         never_cfg = _NeverAnonymiseConfig(phrases=frozenset({"firstsecond"}))
         pairs = _build_scramble_bytes_pairs(
-            page, scramble_map,
+            page,
+            scramble_map,
             _AlwaysAnonymiseConfig(replacements={}),
             never_cfg,
-            font_encodings={}, forward_maps={}, reverse_maps={},
+            font_encodings={},
+            forward_maps={},
+            reverse_maps={},
             bold_fonts=frozenset(),
         )
 
@@ -927,7 +864,7 @@ class TestEdgeCasesContentStream:
         content = b"BT\nET\n"  # Empty text block
         page, _ = _make_page_with_content(content)
         frags = _collect_fragments(page, {})
-        
+
         assert frags == []
 
     @pytest.mark.unit
@@ -941,15 +878,10 @@ class TestEdgeCasesContentStream:
         """
         # This test verifies that the try/except for float() conversion works
         # Note: pikepdf may validate streams, so we construct valid syntax
-        content = (
-            b"BT\n/F1 12 Tf\n"
-            b"1 0 0 1 50 750 Tm\n"
-            b"(Valid) Tj\n"
-            b"ET\n"
-        )
+        content = b"BT\n/F1 12 Tf\n1 0 0 1 50 750 Tm\n(Valid) Tj\nET\n"
         page, _ = _make_page_with_content(content)
         frags = _collect_fragments(page, {})
-        
+
         # Should still collect the valid fragment
         decoded = [f.decoded for f in frags]
         assert "Valid" in decoded
@@ -1067,9 +999,7 @@ class TestRewritePageContentStreamParseFailure:
             warnings.catch_warnings(record=True) as w,
         ):
             warnings.simplefilter("always")
-            result = _rewrite_page_content_stream(
-                page, pdf, [(b"old", b"new")]
-            )
+            result = _rewrite_page_content_stream(page, pdf, [(b"old", b"new")])
 
         assert result is False
         assert len(w) == 1
@@ -1087,9 +1017,6 @@ class TestRewritePageContentStreamParseFailure:
             "pikepdf.parse_content_stream",
             side_effect=pikepdf.PdfError("mocked"),
         ):
-            result = _rewrite_page_content_stream(
-                page, pdf, [(b"old", b"new")]
-            )
+            result = _rewrite_page_content_stream(page, pdf, [(b"old", b"new")])
 
         assert result is False
-

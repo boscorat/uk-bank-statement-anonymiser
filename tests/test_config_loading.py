@@ -123,7 +123,7 @@ class TestLoadAlwaysAnonymise:
     @pytest.mark.unit
     def test_returns_always_anonymise_config_instance(self, tmp_path):
         system = tmp_path / "sys.toml"
-        system.write_text('', encoding="utf-8")
+        system.write_text("", encoding="utf-8")
         result = _load_always_anonymise(system_path=system, user_path=None)
         assert isinstance(result, _AlwaysAnonymiseConfig)
 
@@ -186,7 +186,7 @@ class TestLoadAlwaysAnonymise:
     @pytest.mark.unit
     def test_empty_system_file_returns_empty(self, tmp_path):
         system = tmp_path / "sys.toml"
-        system.write_bytes(b'')
+        system.write_bytes(b"")
         result = _load_always_anonymise(system_path=system, user_path=None)
         assert result.replacements == {}
 
@@ -209,7 +209,7 @@ class TestLoadNeverAnonymise:
     @pytest.mark.unit
     def test_returns_never_anonymise_config_instance(self, tmp_path):
         system = tmp_path / "sys.toml"
-        system.write_text('exclude = []\n', encoding="utf-8")
+        system.write_text("exclude = []\n", encoding="utf-8")
         result = _load_never_anonymise(system_path=system, user_path=None)
         assert isinstance(result, _NeverAnonymiseConfig)
 
@@ -259,7 +259,7 @@ class TestLoadNeverAnonymise:
     @pytest.mark.unit
     def test_missing_exclude_key_returns_empty(self, tmp_path):
         system = tmp_path / "sys.toml"
-        system.write_bytes(b'# no exclude key\n')
+        system.write_bytes(b"# no exclude key\n")
         result = _load_never_anonymise(system_path=system, user_path=None)
         assert len(result.phrases) == 0
 
@@ -316,6 +316,7 @@ class TestBundledSystemToml:
     def test_bundled_always_anonymise_loads(self):
         """always_anonymise_system.toml must load cleanly (currently empty)."""
         from bank_statement_anonymiser.anonymise import _bundled_path
+
         path = _bundled_path("always_anonymise_system.toml")
         result = _load_always_anonymise(system_path=path, user_path=None)
         assert isinstance(result, _AlwaysAnonymiseConfig)
@@ -324,6 +325,7 @@ class TestBundledSystemToml:
     def test_bundled_never_anonymise_loads(self):
         """never_anonymise_system.toml must load cleanly."""
         from bank_statement_anonymiser.anonymise import _bundled_path
+
         path = _bundled_path("never_anonymise_system.toml")
         result = _load_never_anonymise(system_path=path, user_path=None)
         assert isinstance(result, _NeverAnonymiseConfig)
@@ -332,6 +334,7 @@ class TestBundledSystemToml:
     def test_bundled_never_anonymise_contains_dd(self):
         """'DD' (Direct Debit code) must be present in bundled never_anonymise."""
         from bank_statement_anonymiser.anonymise import _bundled_path
+
         path = _bundled_path("never_anonymise_system.toml")
         result = _load_never_anonymise(system_path=path, user_path=None)
         assert "dd" in result.phrases
@@ -340,6 +343,7 @@ class TestBundledSystemToml:
     def test_bundled_never_anonymise_contains_balance_brought_forward(self):
         """'Balance Brought Forward' must be present in bundled never_anonymise."""
         from bank_statement_anonymiser.anonymise import _bundled_path
+
         path = _bundled_path("never_anonymise_system.toml")
         result = _load_never_anonymise(system_path=path, user_path=None)
         assert "balancebroughtforward" in result.phrases
@@ -348,6 +352,7 @@ class TestBundledSystemToml:
     def test_bundled_never_anonymise_contains_bp(self):
         """'BP' (Bill Payment code) must be in bundled never_anonymise."""
         from bank_statement_anonymiser.anonymise import _bundled_path
+
         path = _bundled_path("never_anonymise_system.toml")
         result = _load_never_anonymise(system_path=path, user_path=None)
         assert "bp" in result.phrases
@@ -356,6 +361,7 @@ class TestBundledSystemToml:
     def test_bundled_never_anonymise_has_many_entries(self):
         """Bundled system file should provide a substantial list of protected phrases."""
         from bank_statement_anonymiser.anonymise import _bundled_path
+
         path = _bundled_path("never_anonymise_system.toml")
         result = _load_never_anonymise(system_path=path, user_path=None)
         assert len(result.phrases) >= 10
@@ -446,18 +452,11 @@ class TestConfigValidation:
         """Should raise FileNotFoundError if user always_anonymise path is missing."""
         missing_path = tmp_path / "non_existent.toml"
         with pytest.raises(FileNotFoundError, match="User always_anonymise config not found"):
-            _load_always_anonymise(
-                system_path=Path("src/bank_statement_anonymiser/always_anonymise_system.toml"),
-                user_path=missing_path
-            )
+            _load_always_anonymise(system_path=Path("src/bank_statement_anonymiser/always_anonymise_system.toml"), user_path=missing_path)
 
     @pytest.mark.unit
     def test_load_never_anonymise_missing_user_path(self, tmp_path):
         """Should raise FileNotFoundError if user never_anonymise path is missing."""
         missing_path = tmp_path / "non_existent.toml"
         with pytest.raises(FileNotFoundError, match="User never_anonymise config not found"):
-            _load_never_anonymise(
-                system_path=Path("src/bank_statement_anonymiser/never_anonymise_system.toml"),
-                user_path=missing_path
-            )
-
+            _load_never_anonymise(system_path=Path("src/bank_statement_anonymiser/never_anonymise_system.toml"), user_path=missing_path)

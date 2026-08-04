@@ -32,6 +32,7 @@ from bank_statement_anonymiser.anonymise import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_page(content: bytes, bold: bool = False) -> tuple[pikepdf.Page, pikepdf.Pdf]:
     """One-page PDF with a Latin-1 font (F1 = Helvetica, or F2 = Helvetica-Bold)."""
     pdf = pikepdf.Pdf.new()
@@ -53,19 +54,8 @@ def _make_page(content: bytes, bold: bool = False) -> tuple[pikepdf.Page, pikepd
 def _tj(text: str, font: str = "/F1") -> bytes:
     """BT … Tj … ET block with Latin-1 encoded text."""
     encoded = text.encode("latin-1")
-    escaped = (
-        encoded
-        .replace(b"\\", b"\\\\")
-        .replace(b"(", b"\\(")
-        .replace(b")", b"\\)")
-    )
-    return (
-        b"BT\n"
-        + font.encode() + b" 12 Tf\n"
-        + b"50 750 Td\n"
-        + b"(" + escaped + b") Tj\n"
-        + b"ET\n"
-    )
+    escaped = encoded.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
+    return b"BT\n" + font.encode() + b" 12 Tf\n" + b"50 750 Td\n" + b"(" + escaped + b") Tj\n" + b"ET\n"
 
 
 def _empty_configs() -> tuple[_AlwaysAnonymiseConfig, _NeverAnonymiseConfig]:
@@ -102,7 +92,7 @@ class TestDistributeReplacement:
     @pytest.mark.unit
     def test_two_fragments_split_by_decoded_length(self):
         """First slot gets exactly len(frag.decoded) chars; last gets remainder."""
-        frag1 = _Fragment(raw=b"John", font="/F1", decoded="John")   # len 4
+        frag1 = _Fragment(raw=b"John", font="/F1", decoded="John")  # len 4
         frag2 = _Fragment(raw=b"Smith", font="/F1", decoded="Smith")  # len 5
         always_replacements: dict[int, str] = {}
         _distribute_replacement("JaneDoe", [0, 1], [frag1, frag2], always_replacements)
@@ -402,7 +392,14 @@ class TestBuildScramblePairsNumericIdMap:
         fe, fm, rm, bf = _page_maps(page)
         numeric_id_map = {"40-37-28": "00-00-00"}
         result = _build_scramble_bytes_pairs(
-            page, scramble_map, always_cfg, never_cfg, fe, fm, rm, bf,
+            page,
+            scramble_map,
+            always_cfg,
+            never_cfg,
+            fe,
+            fm,
+            rm,
+            bf,
             numeric_id_map=numeric_id_map,
         )
         pair_map = {orig: repl for orig, repl in result}
@@ -417,7 +414,14 @@ class TestBuildScramblePairsNumericIdMap:
         fe, fm, rm, bf = _page_maps(page)
         numeric_id_map = {"40-37-28": "00-00-00"}
         result = _build_scramble_bytes_pairs(
-            page, scramble_map, always_cfg, never_cfg, fe, fm, rm, bf,
+            page,
+            scramble_map,
+            always_cfg,
+            never_cfg,
+            fe,
+            fm,
+            rm,
+            bf,
             numeric_id_map=numeric_id_map,
         )
         pair_map = {orig: repl for orig, repl in result}
@@ -432,7 +436,14 @@ class TestBuildScramblePairsNumericIdMap:
         scramble_map = _make_scramble_map()
         fe, fm, rm, bf = _page_maps(page)
         result = _build_scramble_bytes_pairs(
-            page, scramble_map, always_cfg, never_cfg, fe, fm, rm, bf,
+            page,
+            scramble_map,
+            always_cfg,
+            never_cfg,
+            fe,
+            fm,
+            rm,
+            bf,
             numeric_id_map=None,
         )
         assert isinstance(result, list)

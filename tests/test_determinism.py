@@ -57,12 +57,7 @@ def _make_pdf(tmp_path: Path, content: bytes, filename: str = "src.pdf") -> Path
 
 def _tj(text: str) -> bytes:
     encoded = text.encode("latin-1")
-    escaped = (
-        encoded
-        .replace(b"\\", b"\\\\")
-        .replace(b"(", b"\\(")
-        .replace(b")", b"\\)")
-    )
+    escaped = encoded.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
     return b"BT\n/F1 12 Tf\n50 750 Td\n(" + escaped + b") Tj\nET\n"
 
 
@@ -128,9 +123,7 @@ class TestSameSeedSameOutput:
     """With a fixed RNG seed, two anonymise_pdf calls produce identical text."""
 
     @pytest.mark.unit
-    def test_same_raw_bytes_scramble_identically_within_one_run(
-        self, mock_random_source, tmp_path
-    ):
+    def test_same_raw_bytes_scramble_identically_within_one_run(self, mock_random_source, tmp_path):
         """Within a single anonymise_pdf call the same Tj bytes always produce
         the same replacement — guaranteed by the seen_raw deduplication set.
 
@@ -147,9 +140,7 @@ class TestSameSeedSameOutput:
         texts = _extract_all_text(out)
         alpha_texts = [t for t in texts if t.strip()]
         # All three slots should hold the same scrambled word
-        assert len(set(alpha_texts)) == 1, (
-            f"Same raw bytes produced different replacements: {set(alpha_texts)}"
-        )
+        assert len(set(alpha_texts)) == 1, f"Same raw bytes produced different replacements: {set(alpha_texts)}"
 
     @pytest.mark.unit
     def test_same_seed_different_words_different_outputs(self, mock_random_source, tmp_path):
@@ -212,6 +203,4 @@ class TestCrossPageConsistency:
         texts = _extract_all_text(out)
         # Filter out empty/whitespace; both pages had "Merchant" → same scrambled word
         alpha_texts = [t for t in texts if t.strip() and t.strip().isalpha()]
-        assert len(set(alpha_texts)) == 1, (
-            f"Same word on two pages scrambled differently: {set(alpha_texts)}"
-        )
+        assert len(set(alpha_texts)) == 1, f"Same word on two pages scrambled differently: {set(alpha_texts)}"

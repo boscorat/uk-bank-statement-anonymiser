@@ -64,13 +64,7 @@ def _make_identity_h_cmap(pairs: list[tuple[int, int]]) -> bytes:
     """Build a minimal Identity-H ToUnicode CMap from (cid_16bit, unicode_cp) pairs."""
     entries = "\n".join(f"<{g:04X}> <{u:04X}>" for g, u in pairs)
     return (
-        f"/CIDInit /ProcSet findresource begin\n"
-        f"12 dict begin\n"
-        f"begincmap\n"
-        f"{len(pairs)} beginbfchar\n"
-        f"{entries}\n"
-        f"endbfchar\n"
-        f"endcmap\n"
+        f"/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n{len(pairs)} beginbfchar\n{entries}\nendbfchar\nendcmap\n"
     ).encode("latin-1")
 
 
@@ -204,9 +198,7 @@ class TestParseTounicodeCmap:
 
         for key, value in result.items():
             assert isinstance(value, str), f"Value for key {key} is not str"
-            assert len(value) == 1, (
-                f"Value for key {key} has length {len(value)}, expected 1"
-            )
+            assert len(value) == 1, f"Value for key {key} has length {len(value)}, expected 1"
 
 
 # ---------------------------------------------------------------------------
@@ -412,9 +404,7 @@ class TestDecodeRawBytesV2:
                 is_identity_h=is_identity_h,
             )
             result = _decode_raw_bytes_v2(b"", font_enc)
-            assert result == "", (
-                f"Expected empty string for is_identity_h={is_identity_h}"
-            )
+            assert result == "", f"Expected empty string for is_identity_h={is_identity_h}"
 
 
 # ---------------------------------------------------------------------------
@@ -616,9 +606,7 @@ class TestReencodeFragment:
         """
         # CID 0x0100 for 'A', CID 0x0101 for 'B'
         reverse_maps = {"/F0": {"A": 0x0100, "B": 0x0101}}
-        font_encodings = {
-            "/F0": _FontEncoding("/F0", {0x0100: "A", 0x0101: "B"}, is_identity_h=True)
-        }
+        font_encodings = {"/F0": _FontEncoding("/F0", {0x0100: "A", 0x0101: "B"}, is_identity_h=True)}
         result = _reencode_fragment("AB", "/F0", reverse_maps, font_encodings)
         expected = bytes([0x01, 0x00, 0x01, 0x01])
         assert result == expected, f"Expected {expected!r}, got {result!r}"
@@ -670,9 +658,7 @@ class TestScrambleTextFontAware:
         text = "HelloWorld"
         result_aware = _scramble_text_font_aware(text, scramble_map, "/F1", {})
         result_plain = _scramble_text(text, scramble_map)
-        assert result_aware == result_plain, (
-            "Font-aware scramble should equal plain scramble when no reverse map"
-        )
+        assert result_aware == result_plain, "Font-aware scramble should equal plain scramble when no reverse map"
 
     @pytest.mark.unit
     def test_avoids_glyph_byte_collision(self, mock_random_source):
@@ -707,9 +693,7 @@ class TestScrambleTextFontAware:
         # Result should not use the colliding preferred char
         if result != "a":  # only check if a replacement was found
             result_byte = reverse_maps["/F1"].get(result)
-            assert result_byte != 0x61, (
-                f"Output '{result}' has same glyph byte as 'a' (collision)"
-            )
+            assert result_byte != 0x61, f"Output '{result}' has same glyph byte as 'a' (collision)"
 
     @pytest.mark.unit
     def test_keeps_original_when_not_in_reverse_map(self, mock_random_source):
@@ -726,9 +710,7 @@ class TestScrambleTextFontAware:
 
         text = "X"
         result = _scramble_text_font_aware(text, scramble_map, "/F1", reverse_maps)
-        assert result == "X", (
-            f"Char 'X' not in reverse map should be preserved, got {result!r}"
-        )
+        assert result == "X", f"Char 'X' not in reverse map should be preserved, got {result!r}"
 
     @pytest.mark.unit
     def test_preserves_non_alpha_chars(self, mock_random_source):
@@ -748,9 +730,7 @@ class TestScrambleTextFontAware:
 
         for orig, res in zip(text, result):
             if not orig.isalpha():
-                assert res == orig, (
-                    f"Non-alpha '{orig}' changed to '{res}'"
-                )
+                assert res == orig, f"Non-alpha '{orig}' changed to '{res}'"
 
     @pytest.mark.unit
     def test_output_length_preserved(self, mock_random_source):
@@ -762,14 +742,10 @@ class TestScrambleTextFontAware:
         Then: Output length equals input length
         """
         scramble_map = _make_scramble_map()
-        reverse_maps = {
-            "/F1": {chr(ord("a") + i): ord("a") + i for i in range(26)}
-        }
+        reverse_maps = {"/F1": {chr(ord("a") + i): ord("a") + i for i in range(26)}}
         text = "hello world"
         result = _scramble_text_font_aware(text, scramble_map, "/F1", reverse_maps)
-        assert len(result) == len(text), (
-            f"Length changed: {len(text)} -> {len(result)}"
-        )
+        assert len(result) == len(text), f"Length changed: {len(text)} -> {len(result)}"
 
 
 # ---------------------------------------------------------------------------
@@ -799,9 +775,7 @@ class TestRoundTripEncoding:
         assert decoded == "Hello"
 
         re_encoded = _reencode_fragment(decoded, "/F1", {"/F1": rev})
-        assert re_encoded == raw, (
-            f"Round-trip failed: {raw!r} -> {decoded!r} -> {re_encoded!r}"
-        )
+        assert re_encoded == raw, f"Round-trip failed: {raw!r} -> {decoded!r} -> {re_encoded!r}"
 
     @pytest.mark.unit
     def test_identity_h_roundtrip(self):
@@ -824,9 +798,7 @@ class TestRoundTripEncoding:
         assert decoded == "Hi"
 
         re_encoded = _reencode_fragment(decoded, "/F0", {"/F0": rev}, font_encodings)
-        assert re_encoded == raw, (
-            f"Round-trip failed: {raw!r} -> {decoded!r} -> {re_encoded!r}"
-        )
+        assert re_encoded == raw, f"Round-trip failed: {raw!r} -> {decoded!r} -> {re_encoded!r}"
 
     @pytest.mark.unit
     def test_latin1_roundtrip_fallback(self):
@@ -843,9 +815,7 @@ class TestRoundTripEncoding:
         assert decoded == "Barclays"
 
         re_encoded = _reencode_fragment(decoded, "/F1", {})
-        assert re_encoded == raw, (
-            f"Latin-1 round-trip failed: {raw!r} -> {decoded!r} -> {re_encoded!r}"
-        )
+        assert re_encoded == raw, f"Latin-1 round-trip failed: {raw!r} -> {decoded!r} -> {re_encoded!r}"
 
     @pytest.mark.unit
     def test_scramble_roundtrip_via_cmap(self, mock_random_source):
@@ -875,9 +845,7 @@ class TestRoundTripEncoding:
 
         # And we can decode the scrambled bytes back to the scrambled text
         decoded_again = _decode_raw_bytes(re_encoded, "/F1", forward_maps)
-        assert decoded_again == scrambled, (
-             f"Re-decoded text {decoded_again!r} should equal scrambled {scrambled!r}"
-        )
+        assert decoded_again == scrambled, f"Re-decoded text {decoded_again!r} should equal scrambled {scrambled!r}"
 
 
 class TestIdentityHFontDetectionEdgeCases:
@@ -897,45 +865,45 @@ class TestIdentityHFontDetectionEdgeCases:
 
     @pytest.mark.unit
     def test_is_identity_h_font_missing_encoding(self):
-         """
-         Verify that font dict without /Encoding key returns False.
+        """
+        Verify that font dict without /Encoding key returns False.
 
-         Given: Font dictionary with no /Encoding entry
-         When: _is_identity_h_font is called
-         Then: Returns False
-         """
-         font_dict = pikepdf.Dictionary()
-         # No /Encoding key
-         result = _is_identity_h_font(font_dict)
-         assert result is False, f"Expected False for missing /Encoding, got {result}"
+        Given: Font dictionary with no /Encoding entry
+        When: _is_identity_h_font is called
+        Then: Returns False
+        """
+        font_dict = pikepdf.Dictionary()
+        # No /Encoding key
+        result = _is_identity_h_font(font_dict)
+        assert result is False, f"Expected False for missing /Encoding, got {result}"
 
     @pytest.mark.unit
     def test_is_identity_h_font_empty_dict(self):
-         """
-         Verify that empty font dictionary returns False.
+        """
+        Verify that empty font dictionary returns False.
 
-         Given: Empty font dictionary
-         When: _is_identity_h_font is called
-         Then: Returns False
-         """
-         font_dict = pikepdf.Dictionary()
-         result = _is_identity_h_font(font_dict)
-         assert result is False, f"Expected False for empty dict, got {result}"
+        Given: Empty font dictionary
+        When: _is_identity_h_font is called
+        Then: Returns False
+        """
+        font_dict = pikepdf.Dictionary()
+        result = _is_identity_h_font(font_dict)
+        assert result is False, f"Expected False for empty dict, got {result}"
 
     @pytest.mark.unit
     def test_is_identity_h_font_correct_encoding(self):
-         """
-         Verify that Identity-H encoding is correctly detected.
+        """
+        Verify that Identity-H encoding is correctly detected.
 
-         Given: Font dictionary with /Encoding: /Identity-H (or /Identity_H)
-         When: _is_identity_h_font is called
-         Then: Returns True
-         """
-         font_dict = pikepdf.Dictionary()
-         font_dict["/Encoding"] = pikepdf.Name.Identity_H  # pikepdf uses underscore
-         result = _is_identity_h_font(font_dict)
-         # The implementation should handle both underscore and hyphen versions
-         assert result is True, f"Expected True for Identity_H, got {result}"
+        Given: Font dictionary with /Encoding: /Identity-H (or /Identity_H)
+        When: _is_identity_h_font is called
+        Then: Returns True
+        """
+        font_dict = pikepdf.Dictionary()
+        font_dict["/Encoding"] = pikepdf.Name.Identity_H  # pikepdf uses underscore
+        result = _is_identity_h_font(font_dict)
+        # The implementation should handle both underscore and hyphen versions
+        assert result is True, f"Expected True for Identity_H, got {result}"
 
     @pytest.mark.unit
     def test_is_identity_h_font_other_encoding(self):
@@ -966,4 +934,3 @@ class TestIdentityHFontDetectionEdgeCases:
         result = _is_identity_h_font(font_dict)
         # Should return False since the string "not_a_name" doesn't match
         assert result is False, f"Expected False for invalid encoding type, got {result}"
-

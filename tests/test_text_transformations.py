@@ -55,13 +55,10 @@ class TestScrambleMapGeneration:
         for letter in "abcdefghijklmnopqrstuvwxyz":
             ord_lower = ord(letter)
             assert ord_lower in scramble_map, f"Lowercase letter '{letter}' not in map"
-            
+
             mapped_value = scramble_map[ord_lower]
             # Verify it maps to a lowercase letter
-            assert 97 <= mapped_value <= 122, (
-                f"Letter '{letter}' maps to {chr(mapped_value)}, "
-                f"which is not a lowercase letter"
-            )
+            assert 97 <= mapped_value <= 122, f"Letter '{letter}' maps to {chr(mapped_value)}, which is not a lowercase letter"
 
     @pytest.mark.unit
     def test_scramble_map_contains_all_uppercase_letters(self, mock_random_source):
@@ -78,13 +75,10 @@ class TestScrambleMapGeneration:
         for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
             ord_upper = ord(letter)
             assert ord_upper in scramble_map, f"Uppercase letter '{letter}' not in map"
-            
+
             mapped_value = scramble_map[ord_upper]
             # Verify it maps to an uppercase letter
-            assert 65 <= mapped_value <= 90, (
-                f"Letter '{letter}' maps to {chr(mapped_value)}, "
-                f"which is not an uppercase letter"
-            )
+            assert 65 <= mapped_value <= 90, f"Letter '{letter}' maps to {chr(mapped_value)}, which is not an uppercase letter"
 
     @pytest.mark.unit
     def test_scramble_map_has_exactly_52_entries(self, mock_random_source):
@@ -96,9 +90,7 @@ class TestScrambleMapGeneration:
         Then: There are exactly 52 keys (one per letter, case-sensitive)
         """
         scramble_map = _make_scramble_map()
-        assert len(scramble_map) == 52, (
-            f"Expected 52 entries (26 lower + 26 upper), got {len(scramble_map)}"
-        )
+        assert len(scramble_map) == 52, f"Expected 52 entries (26 lower + 26 upper), got {len(scramble_map)}"
 
     @pytest.mark.unit
     def test_scramble_map_preserves_case(self, mock_random_source):
@@ -116,10 +108,8 @@ class TestScrambleMapGeneration:
         for ord_key, ord_value in scramble_map.items():
             is_lower_key = 97 <= ord_key <= 122
             is_lower_value = 97 <= ord_value <= 122
-            
-            assert is_lower_key == is_lower_value, (
-                f"Case mismatch: {chr(ord_key)} maps to {chr(ord_value)}"
-            )
+
+            assert is_lower_key == is_lower_value, f"Case mismatch: {chr(ord_key)} maps to {chr(ord_value)}"
 
     @pytest.mark.unit
     def test_scramble_map_never_identity_maps_lowercase(self, mock_random_source):
@@ -135,9 +125,7 @@ class TestScrambleMapGeneration:
         for letter in "abcdefghijklmnopqrstuvwxyz":
             ord_lower = ord(letter)
             mapped_value = scramble_map[ord_lower]
-            assert mapped_value != ord_lower, (
-                f"Lowercase letter '{letter}' maps to itself (identity mapping)"
-            )
+            assert mapped_value != ord_lower, f"Lowercase letter '{letter}' maps to itself (identity mapping)"
 
     @pytest.mark.unit
     def test_scramble_map_never_identity_maps_uppercase(self, mock_random_source):
@@ -153,9 +141,7 @@ class TestScrambleMapGeneration:
         for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
             ord_upper = ord(letter)
             mapped_value = scramble_map[ord_upper]
-            assert mapped_value != ord_upper, (
-                f"Uppercase letter '{letter}' maps to itself (identity mapping)"
-            )
+            assert mapped_value != ord_upper, f"Uppercase letter '{letter}' maps to itself (identity mapping)"
 
     @pytest.mark.unit
     def test_scramble_map_never_produces_identity_mapping(self, mock_random_source):
@@ -170,20 +156,16 @@ class TestScrambleMapGeneration:
         # Generate multiple maps to verify the no-identity-mapping property holds
         for _ in range(3):
             scramble_map = _make_scramble_map()
-            
+
             # Verify no lowercase letter maps to itself
             for letter in "abcdefghijklmnopqrstuvwxyz":
                 ord_lower = ord(letter)
-                assert scramble_map[ord_lower] != ord_lower, (
-                    f"Identity mapping found for lowercase '{letter}'"
-                )
-            
+                assert scramble_map[ord_lower] != ord_lower, f"Identity mapping found for lowercase '{letter}'"
+
             # Verify no uppercase letter maps to itself
             for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
                 ord_upper = ord(letter)
-                assert scramble_map[ord_upper] != ord_upper, (
-                    f"Identity mapping found for uppercase '{letter}'"
-                )
+                assert scramble_map[ord_upper] != ord_upper, f"Identity mapping found for uppercase '{letter}'"
 
     @pytest.mark.unit
     def test_scramble_map_is_permutation(self, mock_random_source):
@@ -198,28 +180,18 @@ class TestScrambleMapGeneration:
         """
         scramble_map = _make_scramble_map()
 
-        lower_mapped = [
-            chr(scramble_map[ord(letter)])
-            for letter in "abcdefghijklmnopqrstuvwxyz"
-        ]
-        upper_mapped = [
-            chr(scramble_map[ord(letter)])
-            for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        ]
+        lower_mapped = [chr(scramble_map[ord(letter)]) for letter in "abcdefghijklmnopqrstuvwxyz"]
+        upper_mapped = [chr(scramble_map[ord(letter)]) for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
 
         # Check all lowercase values are unique
         assert len(set(lower_mapped)) == 26, "Lowercase mappings are not a permutation"
-        
+
         # Check all uppercase values are unique
         assert len(set(upper_mapped)) == 26, "Uppercase mappings are not a permutation"
-        
+
         # Check that we map to the full alphabet
-        assert set(lower_mapped) == set("abcdefghijklmnopqrstuvwxyz"), (
-            "Lowercase mappings don't cover full alphabet"
-        )
-        assert set(upper_mapped) == set("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), (
-            "Uppercase mappings don't cover full alphabet"
-        )
+        assert set(lower_mapped) == set("abcdefghijklmnopqrstuvwxyz"), "Lowercase mappings don't cover full alphabet"
+        assert set(upper_mapped) == set("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), "Uppercase mappings don't cover full alphabet"
 
 
 class TestScrambleTextTransformation:
@@ -236,9 +208,9 @@ class TestScrambleTextTransformation:
         """
         scramble_map = _make_scramble_map()
         text = "abcdefghijklmnopqrstuvwxyz"
-        
+
         result = _scramble_text(text, scramble_map)
-        
+
         assert result.islower(), f"Result contains uppercase: {result}"
         assert len(result) == len(text), "Length changed after scrambling"
 
@@ -253,9 +225,9 @@ class TestScrambleTextTransformation:
         """
         scramble_map = _make_scramble_map()
         text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        
+
         result = _scramble_text(text, scramble_map)
-        
+
         assert result.isupper(), f"Result contains lowercase: {result}"
         assert len(result) == len(text), "Length changed after scrambling"
 
@@ -270,16 +242,14 @@ class TestScrambleTextTransformation:
         """
         scramble_map = _make_scramble_map()
         text = "abc123def456ghi"
-        
+
         result = _scramble_text(text, scramble_map)
-        
+
         # Extract digits from input and result
         input_digits = "".join(c for c in text if c.isdigit())
         result_digits = "".join(c for c in result if c.isdigit())
-        
-        assert input_digits == result_digits, (
-            f"Digits changed: '{input_digits}' -> '{result_digits}'"
-        )
+
+        assert input_digits == result_digits, f"Digits changed: '{input_digits}' -> '{result_digits}'"
 
     @pytest.mark.unit
     def test_scramble_leaves_symbols_unchanged(self, mock_random_source):
@@ -292,16 +262,14 @@ class TestScrambleTextTransformation:
         """
         scramble_map = _make_scramble_map()
         text = "Hello-World!@#$%&*()"
-        
+
         result = _scramble_text(text, scramble_map)
-        
+
         # Extract non-alphanumeric characters
         input_symbols = "".join(c for c in text if not c.isalnum())
         result_symbols = "".join(c for c in result if not c.isalnum())
-        
-        assert input_symbols == result_symbols, (
-            f"Symbols changed: '{input_symbols}' -> '{result_symbols}'"
-        )
+
+        assert input_symbols == result_symbols, f"Symbols changed: '{input_symbols}' -> '{result_symbols}'"
 
     @pytest.mark.unit
     def test_scramble_preserves_length(self, mock_random_source):
@@ -320,13 +288,10 @@ class TestScrambleTextTransformation:
             "Account123",
             "40-37-28",
         ]
-        
+
         for text in test_strings:
             result = _scramble_text(text, scramble_map)
-            assert len(result) == len(text), (
-                f"Length mismatch for '{text}': "
-                f"expected {len(text)}, got {len(result)}"
-            )
+            assert len(result) == len(text), f"Length mismatch for '{text}': expected {len(text)}, got {len(result)}"
 
     @pytest.mark.unit
     def test_scramble_empty_string(self, mock_random_source):
@@ -346,16 +311,14 @@ class TestScrambleTextTransformation:
         """
         scramble_map = _make_scramble_map()
         text = "Hello World Example"
-        
+
         result = _scramble_text(text, scramble_map)
-        
+
         # Extract space positions
         input_spaces = [i for i, c in enumerate(text) if c == " "]
         result_spaces = [i for i, c in enumerate(result) if c == " "]
-        
-        assert input_spaces == result_spaces, (
-            f"Space positions changed: {input_spaces} -> {result_spaces}"
-        )
+
+        assert input_spaces == result_spaces, f"Space positions changed: {input_spaces} -> {result_spaces}"
 
     @pytest.mark.unit
     def test_scramble_produces_different_output(self, mock_random_source):
@@ -368,12 +331,10 @@ class TestScrambleTextTransformation:
         """
         scramble_map = _make_scramble_map()
         text = "abcdefghijklmnopqrstuvwxyz"
-        
+
         result = _scramble_text(text, scramble_map)
-        
-        assert result != text, (
-            "Scrambling produced identical output (all identity mappings)"
-        )
+
+        assert result != text, "Scrambling produced identical output (all identity mappings)"
 
     @pytest.mark.unit
     def test_mixed_case_scramble_preserves_case(self, mock_random_source):
@@ -388,9 +349,9 @@ class TestScrambleTextTransformation:
         """
         scramble_map = _make_scramble_map()
         text = "HeLLo WoRLd"
-        
+
         result = _scramble_text(text, scramble_map)
-        
+
         for i, (orig_char, result_char) in enumerate(zip(text, result)):
             if orig_char.isalpha():
                 assert orig_char.isupper() == result_char.isupper(), (
@@ -451,20 +412,17 @@ class TestRepeatLastTwo:
         Then: Output length equals input length
         """
         test_cases = [
-            "12",      # 2 digits
-            "123",     # 3 digits
-            "1234",    # 4 digits
+            "12",  # 2 digits
+            "123",  # 3 digits
+            "1234",  # 4 digits
             "403728",  # 6 digits (sort code)
             "31243535",  # 8 digits (account)
             "1234567890123456",  # 16 digits (card)
         ]
-        
+
         for digits in test_cases:
             result = _repeat_last_two(digits)
-            assert len(result) == len(digits), (
-                f"Length mismatch for '{digits}': "
-                f"expected {len(digits)}, got {len(result)}"
-            )
+            assert len(result) == len(digits), f"Length mismatch for '{digits}': expected {len(digits)}, got {len(result)}"
 
     @pytest.mark.unit
     def test_repeat_last_two_fallback_single_digit(self):
@@ -478,9 +436,7 @@ class TestRepeatLastTwo:
         # "1111" repeats to "1111" so fallback to single-digit repeat "1" -> "1111"
         # This still produces "1111", so it will use "0" as final fallback
         result = _repeat_last_two("1111")
-        assert result == "0000", (
-            f"Expected fallback '0000' for all-ones, got '{result}'"
-        )
+        assert result == "0000", f"Expected fallback '0000' for all-ones, got '{result}'"
 
     @pytest.mark.unit
     def test_repeat_last_two_fallback_all_zeros(self):
@@ -492,9 +448,7 @@ class TestRepeatLastTwo:
         Then: Fallback is '1' repeated (not '0' since original is '0')
         """
         result = _repeat_last_two("000000")
-        assert result == "111111", (
-            f"Expected fallback '111111' for all-zeros, got '{result}'"
-        )
+        assert result == "111111", f"Expected fallback '111111' for all-zeros, got '{result}'"
 
     @pytest.mark.unit
     def test_repeat_last_two_is_deterministic(self):
@@ -507,10 +461,8 @@ class TestRepeatLastTwo:
         """
         digits = "403728"
         results = [_repeat_last_two(digits) for _ in range(5)]
-        
-        assert all(r == results[0] for r in results), (
-            "Results differ across calls for same input"
-        )
+
+        assert all(r == results[0] for r in results), "Results differ across calls for same input"
 
     @pytest.mark.unit
     def test_repeat_last_two_consistency_across_formats(self):
@@ -524,14 +476,11 @@ class TestRepeatLastTwo:
         # "40-37-28" and "40 37 28" both have digits "403728"
         digits_hyphenated = "403728"
         digits_spaced = "403728"
-        
+
         result1 = _repeat_last_two(digits_hyphenated)
         result2 = _repeat_last_two(digits_spaced)
-        
-        assert result1 == result2, (
-            f"Different results for same digits: "
-            f"'{result1}' vs '{result2}'"
-        )
+
+        assert result1 == result2, f"Different results for same digits: '{result1}' vs '{result2}'"
 
 
 class TestStripNumericSeparators:
@@ -571,9 +520,7 @@ class TestStripNumericSeparators:
         Then: We get "3333222211110000"
         """
         result = _strip_numeric_separators("3333 2222 1111 0000")
-        assert result == "3333222211110000", (
-            f"Expected '3333222211110000', got '{result}'"
-        )
+        assert result == "3333222211110000", f"Expected '3333222211110000', got '{result}'"
 
     @pytest.mark.unit
     def test_strip_numeric_separators_iban_spaced(self):
@@ -585,9 +532,7 @@ class TestStripNumericSeparators:
         Then: We get "60162400398004"
         """
         result = _strip_numeric_separators("6016 2400 3980 04")
-        assert result == "60162400398004", (
-            f"Expected '60162400398004', got '{result}'"
-        )
+        assert result == "60162400398004", f"Expected '60162400398004', got '{result}'"
 
     @pytest.mark.unit
     def test_strip_numeric_separators_leaves_digits(self):
@@ -664,9 +609,7 @@ class TestReapplySeparators:
         Then: We get "1111 2222 3333 4444"
         """
         result = _reapply_separators("3333 2222 1111 0000", "1111222233334444")
-        assert result == "1111 2222 3333 4444", (
-            f"Expected '1111 2222 3333 4444', got '{result}'"
-        )
+        assert result == "1111 2222 3333 4444", f"Expected '1111 2222 3333 4444', got '{result}'"
 
     @pytest.mark.unit
     def test_reapply_separators_iban_spaced(self):
@@ -678,9 +621,7 @@ class TestReapplySeparators:
         Then: We get "1234 1234 1234 56"
         """
         result = _reapply_separators("6016 2400 3980 04", "12341234123456")
-        assert result == "1234 1234 1234 56", (
-            f"Expected '1234 1234 1234 56', got '{result}'"
-        )
+        assert result == "1234 1234 1234 56", f"Expected '1234 1234 1234 56', got '{result}'"
 
     @pytest.mark.unit
     def test_reapply_separators_excess_new_digits(self):
@@ -694,9 +635,7 @@ class TestReapplySeparators:
         result = _reapply_separators("40-37", "7894561")
         # "40-37" has 5 chars: positions 0=4, 1=0, 2=-, 3=3, 4=7
         # Filling: 0→7, 1→8, 2→-, 3→9, 4→4, then append surplus "561"
-        assert result == "78-94561", (
-            f"Expected '78-94561', got '{result}'"
-        )
+        assert result == "78-94561", f"Expected '78-94561', got '{result}'"
 
     @pytest.mark.unit
     def test_reapply_separators_short_new_digits(self):
@@ -709,9 +648,7 @@ class TestReapplySeparators:
         """
         result = _reapply_separators("40-37-28", "75")
         # "40-37-28": fill 0→7, 1→5, keep 2→-, then keep remaining digits from original "3728"
-        assert result == "75-37-28", (
-            f"Expected '75-37-28', got '{result}'"
-        )
+        assert result == "75-37-28", f"Expected '75-37-28', got '{result}'"
 
     @pytest.mark.unit
     def test_reapply_separators_preserves_structure(self):
@@ -725,13 +662,11 @@ class TestReapplySeparators:
         original = "40-37-28"
         new_digits = "999999"
         result = _reapply_separators(original, new_digits)
-        
+
         # Check separator positions match
         for i, (orig_char, result_char) in enumerate(zip(original, result)):
             if not orig_char.isdigit():
-                assert result_char == orig_char, (
-                    f"Position {i} should have '{orig_char}', got '{result_char}'"
-                )
+                assert result_char == orig_char, f"Position {i} should have '{orig_char}', got '{result_char}'"
 
     @pytest.mark.unit
     def test_reapply_separators_empty_original(self):
@@ -743,9 +678,7 @@ class TestReapplySeparators:
         Then: Result is empty (no separators to apply)
         """
         result = _reapply_separators("", "123456")
-        assert result == "123456", (
-            f"Expected '123456', got '{result}'"
-        )
+        assert result == "123456", f"Expected '123456', got '{result}'"
 
     @pytest.mark.unit
     def test_reapply_separators_empty_new_digits(self):
@@ -758,9 +691,7 @@ class TestReapplySeparators:
         """
         result = _reapply_separators("40-37-28", "")
         # When new_digits is exhausted immediately, original is preserved
-        assert result == "40-37-28", (
-            f"Expected '40-37-28', got '{result}'"
-        )
+        assert result == "40-37-28", f"Expected '40-37-28', got '{result}'"
 
 
 class TestDetectNumericIds:
@@ -776,7 +707,7 @@ class TestDetectNumericIds:
         Then: The sort code is mapped to a replacement
         """
         result = _detect_numeric_ids("Account: 40-37-28")
-        
+
         assert "40-37-28" in result, "Sort code not detected"
         replacement = result["40-37-28"]
         assert replacement != "40-37-28", "No replacement generated"
@@ -793,7 +724,7 @@ class TestDetectNumericIds:
         Then: The sort code is mapped to a replacement
         """
         result = _detect_numeric_ids("Sort: 40 37 28")
-        
+
         assert "40 37 28" in result, "Spaced sort code not detected"
 
     @pytest.mark.unit
@@ -806,7 +737,7 @@ class TestDetectNumericIds:
         Then: Account number is mapped to replacement
         """
         result = _detect_numeric_ids("Account 31243535 Details")
-        
+
         assert "31243535" in result, "Account number not detected"
 
     @pytest.mark.unit
@@ -819,7 +750,7 @@ class TestDetectNumericIds:
         Then: Card number is mapped to replacement
         """
         result = _detect_numeric_ids("Card: 3333 2222 1111 0000")
-        
+
         assert "3333 2222 1111 0000" in result, "Card number not detected"
 
     @pytest.mark.unit
@@ -833,20 +764,18 @@ class TestDetectNumericIds:
         """
         text = "Sort1: 40-37-28 Sort2: 40-37-28"
         result = _detect_numeric_ids(text)
-        
+
         # Find the two occurrences
         occurrences = [k for k in result if k.endswith("28")]
         assert len(occurrences) >= 1, "Sort code not detected"
-        
+
         # If the same key appears, it should have the same value
         if occurrences[0] in result:
             replacement = result[occurrences[0]]
             # Verify consistency by checking the underlying digit mapping
             for occ in occurrences:
                 if occ in result:
-                    assert result[occ] == replacement, (
-                        f"Inconsistent replacement for {occ}"
-                    )
+                    assert result[occ] == replacement, f"Inconsistent replacement for {occ}"
 
     @pytest.mark.unit
     def test_detect_numeric_ids_user_override(self):
@@ -859,12 +788,10 @@ class TestDetectNumericIds:
         """
         user_overrides = {"403728": "000000"}
         result = _detect_numeric_ids("Sort: 40-37-28", user_overrides)
-        
+
         assert "40-37-28" in result
         # The replacement should be "00-00-00"
-        assert result["40-37-28"] == "00-00-00", (
-            f"User override not applied: {result['40-37-28']}"
-        )
+        assert result["40-37-28"] == "00-00-00", f"User override not applied: {result['40-37-28']}"
 
     @pytest.mark.unit
     def test_detect_numeric_ids_no_match(self):
@@ -876,7 +803,7 @@ class TestDetectNumericIds:
         Then: Result is empty dict
         """
         result = _detect_numeric_ids("Just some regular text")
-        
+
         assert result == {}, f"Expected empty dict, got {result}"
 
     @pytest.mark.unit
@@ -890,7 +817,7 @@ class TestDetectNumericIds:
         """
         text = "Sort: 40-37-28 Account: 31243535 Card: 3333 2222 1111 0000"
         result = _detect_numeric_ids(text)
-        
+
         assert "40-37-28" in result, "Sort code not detected"
         assert "31243535" in result, "Account not detected"
         assert "3333 2222 1111 0000" in result, "Card not detected"
@@ -905,7 +832,7 @@ class TestDetectNumericIds:
         Then: IBAN is mapped to replacement
         """
         result = _detect_numeric_ids("IBAN: VN72JNEB40372831243535")
-        
+
         assert "VN72JNEB40372831243535" in result, "Full IBAN not detected"
 
     @pytest.mark.unit
@@ -918,7 +845,7 @@ class TestDetectNumericIds:
         Then: IBAN is mapped to replacement
         """
         result = _detect_numeric_ids("IBAN: GB19 NWBK 6016 2400 3980 04")
-        
+
         assert "GB19 NWBK 6016 2400 3980 04" in result, "Spaced IBAN not detected"
 
     @pytest.mark.unit
@@ -931,7 +858,7 @@ class TestDetectNumericIds:
         Then: Result is empty dict
         """
         result = _detect_numeric_ids("")
-        
+
         assert result == {}, f"Expected empty dict for empty text, got {result}"
 
     @pytest.mark.unit
@@ -945,13 +872,11 @@ class TestDetectNumericIds:
         """
         result = _detect_numeric_ids("40-37-28")
         replacement = result["40-37-28"]
-        
+
         # Format should be XXX-XX-XX (6 digits with hyphens)
-        assert replacement.count("-") == 2, (
-             f"Format not preserved: {replacement}"
-        )
+        assert replacement.count("-") == 2, f"Format not preserved: {replacement}"
         assert len(replacement) == 8, (  # 6 digits + 2 hyphens
-             f"Length mismatch: {replacement}"
+            f"Length mismatch: {replacement}"
         )
 
 
@@ -997,16 +922,16 @@ class TestRepeatLastTwoEdgeCases:
 
     @pytest.mark.unit
     def test_repeat_last_two_two_digit_normal(self):
-         """
-         Verify that two-digit string behavior follows the fallback rules.
+        """
+        Verify that two-digit string behavior follows the fallback rules.
 
-         Given: Two digits "35"
-         When: _repeat_last_two is called
-         Then: Since repeating "35" gives "35" (matches input), fallback to last digit
-         """
-         result = _repeat_last_two("35")
-         # "35" tiled to length 2 would give "35" (matches input), so fallback to last digit "5"
-         assert result == "55", f"Expected '55' (fallback to last digit), got {result!r}"
+        Given: Two digits "35"
+        When: _repeat_last_two is called
+        Then: Since repeating "35" gives "35" (matches input), fallback to last digit
+        """
+        result = _repeat_last_two("35")
+        # "35" tiled to length 2 would give "35" (matches input), so fallback to last digit "5"
+        assert result == "55", f"Expected '55' (fallback to last digit), got {result!r}"
 
     @pytest.mark.unit
     def test_repeat_last_two_repeated_single_digit_fallback(self):
@@ -1056,7 +981,4 @@ class TestRepeatLastTwoEdgeCases:
         ]
         for case in test_cases:
             result = _repeat_last_two(case)
-            assert len(result) == len(case), (
-                f"Length mismatch for {case!r}: expected {len(case)}, got {len(result)}"
-            )
-
+            assert len(result) == len(case), f"Length mismatch for {case!r}: expected {len(case)}, got {len(result)}"
