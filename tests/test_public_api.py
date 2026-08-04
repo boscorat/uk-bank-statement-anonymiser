@@ -159,9 +159,7 @@ class TestAnonymisePdfPublicApi:
             anonymised_content = pikepdf.unparse_content_stream(list(pikepdf.parse_content_stream(anonymised.pages[0])))
 
         # The content should be different (scrambled or replaced)
-        assert anonymised_content != original_content, (
-            "Anonymised PDF has identical content to original - anonymisation may not be working"
-        )
+        assert anonymised_content != original_content, "Anonymised PDF has identical content to original - anonymisation may not be working"
 
     @pytest.mark.unit
     def test_anonymise_pdf_preserves_pdf_structure(self, mock_random_source, simple_text_pdf):
@@ -190,13 +188,9 @@ class TestAnonymisePdfPublicApi:
             anonymised_page_count = len(anonymised.pages)
             anonymised_mediabox = anonymised.pages[0].MediaBox
 
-        assert (
-            anonymised_page_count == original_page_count
-        ), f"Page count changed: {original_page_count} -> {anonymised_page_count}"
+        assert anonymised_page_count == original_page_count, f"Page count changed: {original_page_count} -> {anonymised_page_count}"
 
-        assert (
-            anonymised_mediabox == original_mediabox
-        ), f"MediaBox changed: {original_mediabox} -> {anonymised_mediabox}"
+        assert anonymised_mediabox == original_mediabox, f"MediaBox changed: {original_mediabox} -> {anonymised_mediabox}"
 
     @pytest.mark.unit
     def test_anonymise_pdf_default_output_naming(self, mock_random_source, simple_text_pdf):
@@ -221,14 +215,11 @@ class TestAnonymisePdfPublicApi:
         assert result.name == expected_name, f"Expected name {expected_name}, got {result.name}"
 
         assert result.parent == simple_text_pdf.parent, (
-            "Output not in same directory as input: "
-            f"{result.parent} vs {simple_text_pdf.parent}"
+            f"Output not in same directory as input: {result.parent} vs {simple_text_pdf.parent}"
         )
 
     @pytest.mark.unit
-    def test_anonymise_pdf_with_never_anonymise_config(
-        self, mock_random_source, simple_text_pdf, never_anonymise_config, tmp_path
-    ):
+    def test_anonymise_pdf_with_never_anonymise_config(self, mock_random_source, simple_text_pdf, never_anonymise_config, tmp_path):
         """
         Verify that anonymise_pdf() respects never_anonymise_path configuration.
 
@@ -255,9 +246,7 @@ class TestAnonymisePdfPublicApi:
             assert len(pdf.pages) > 0, "Output PDF has no pages"
 
     @pytest.mark.unit
-    def test_anonymise_pdf_with_always_anonymise_config(
-        self, mock_random_source, simple_text_pdf, always_anonymise_config, tmp_path
-    ):
+    def test_anonymise_pdf_with_always_anonymise_config(self, mock_random_source, simple_text_pdf, always_anonymise_config, tmp_path):
         """
         Verify that anonymise_pdf() respects always_anonymise_path configuration.
 

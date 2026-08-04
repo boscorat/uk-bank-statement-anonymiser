@@ -46,12 +46,7 @@ def _make_pdf(tmp_path: Path, content: bytes, filename: str = "src.pdf") -> Path
 
 def _tj(text: str) -> bytes:
     encoded = text.encode("latin-1")
-    escaped = (
-        encoded
-        .replace(b"\\", b"\\\\")
-        .replace(b"(", b"\\(")
-        .replace(b")", b"\\)")
-    )
+    escaped = encoded.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
     return b"BT\n/F1 12 Tf\n50 750 Td\n(" + escaped + b") Tj\nET\n"
 
 

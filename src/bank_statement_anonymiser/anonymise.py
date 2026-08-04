@@ -197,7 +197,7 @@ def _normalise_phrase(text: str) -> str:
     Removing all colons means config entries like ``"Account number"``
     automatically match PDF fragments rendered as ``"Account number:"`` or
     ``"Account : Number"`` without needing duplicate entries.
-    
+
     Returns empty string if input is None, empty, or only whitespace.
     """
     if not text or not isinstance(text, str):
@@ -290,6 +290,7 @@ def _load_never_anonymise(
 
 class _FontEncoding(NamedTuple):
     """Encoding metadata for a single PDF font."""
+
     font_name: str
     """Font resource name (e.g., '/F0')."""
     forward_map: dict[int, str]
@@ -352,7 +353,7 @@ def _decode_raw_bytes_v2(
         Decoded unicode text.
     """
     fwd = font_encoding.forward_map
-    
+
     if font_encoding.is_identity_h:
         # Identity-H: each 2-byte sequence is a CID (big-endian)
         result: list[str] = []
@@ -405,7 +406,7 @@ def _is_identity_h_font(f: pikepdf.Dictionary) -> bool:
         encoding_str = str(encoding)
         # Handle both /Identity-H and /Identity_H (pikepdf uses underscore)
         return encoding_str in ("/Identity-H", "Identity-H", "/Identity_H", "Identity_H")
-    except (AttributeError, TypeError, KeyError):
+    except AttributeError, TypeError, KeyError:
         return False
 
 
@@ -416,17 +417,17 @@ def _decode_raw_bytes_safe(
     font_encodings: dict[str, _FontEncoding] | None = None,
 ) -> str:
     """Route to appropriate decoder based on available encoding metadata.
-    
+
     This function implements the intentional two-path design:
     - If font_encodings is available and contains the font, uses the Identity-H
       aware decoder (_decode_raw_bytes_v2) for multi-byte CID fonts.
     - Otherwise falls back to the single-byte decoder (_decode_raw_bytes) for
       legacy PDFs with WinAnsiEncoding or custom single-byte encodings.
-    
+
     This dual-path design maintains backward compatibility: fonts without
     Identity-H metadata are always handled by the original decoder, ensuring
     safe fallback for PDFs that may not have complete font encoding metadata.
-    
+
     Args:
         raw: The raw bytes from a Tj/TJ operand in the content stream.
         font: The active font name at the time this operand was encountered.
@@ -434,7 +435,7 @@ def _decode_raw_bytes_safe(
             :func:`_build_font_maps`.
         font_encodings: Optional per-font encoding metadata. When provided,
             enables Identity-H aware decoding for CID-based fonts.
-    
+
     Returns:
         Decoded unicode text.
     """
@@ -472,11 +473,11 @@ def _lookup_numeric_id(
         if key in numeric_id_map:
             return numeric_id_map[key]
     return None
- 
- 
- # ---------------------------------------------------------------------------
- # Digit scrambling
- # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Digit scrambling
+# ---------------------------------------------------------------------------
 
 # (Digit scrambling removed: numeric IDs are now replaced by repeating the
 # last two digits of each ID — see _shared._repeat_last_two.)
@@ -587,7 +588,7 @@ def _collect_fragments(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except (TypeError, AttributeError):
+            except TypeError, AttributeError:
                 current_font = ""
 
         elif op == "Tj" and operands:
@@ -596,7 +597,7 @@ def _collect_fragments(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except (TypeError, AttributeError):
+            except TypeError, AttributeError:
                 pass
 
         elif op == "TJ" and operands:
@@ -608,7 +609,7 @@ def _collect_fragments(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except (TypeError, AttributeError):
+            except TypeError, AttributeError:
                 pass
 
     return fragments
@@ -677,12 +678,12 @@ def _reencode_fragment(
     """
     if font in reverse_maps:
         rev = reverse_maps[font]
-        
+
         # Check if this is an Identity-H font
         is_identity_h = False
         if font_encodings and font in font_encodings:
             is_identity_h = font_encodings[font].is_identity_h
-        
+
         try:
             if is_identity_h:
                 # For Identity-H, CIDs can be > 255, so encode as 2-byte big-endian
@@ -696,7 +697,7 @@ def _reencode_fragment(
             else:
                 # For single-byte fonts, all codes should be 0-255
                 return bytes(rev[c] for c in text)
-        except (KeyError, ValueError):
+        except KeyError, ValueError:
             return None
     else:
         try:
@@ -871,6 +872,7 @@ def _build_scramble_bytes_pairs(
     reverse_maps: dict[str, dict[str, int]],
     bold_fonts: frozenset[str],
     numeric_id_map: dict[str, str] | None = None,
+    retain_descriptions: bool = False,
 ) -> list[tuple[bytes, bytes]]:
     """Build ``(original_raw_bytes, replacement_raw_bytes)`` pairs for *pike_page*.
 
@@ -890,6 +892,10 @@ def _build_scramble_bytes_pairs(
             display forms to their replacement display forms (produced by the
             pre-pass in :func:`anonymise_pdf`).  When provided, any accumulated
             fragment text matching a key is treated as an ``always`` replacement.
+        retain_descriptions: When ``True``, disable default letter-scrambling
+            so that only always-anonymise replacements and numeric ID
+            substitutions are applied.  Transaction descriptions and other
+            free text are left untouched.
 
     Returns:
         List of ``(original_raw_bytes, replacement_raw_bytes)`` pairs, longest
@@ -928,7 +934,7 @@ def _build_scramble_bytes_pairs(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except (TypeError, AttributeError):
+            except TypeError, AttributeError:
                 current_font = ""
 
         elif op in _LINE_BREAK_OPS:
@@ -942,7 +948,7 @@ def _build_scramble_bytes_pairs(
                 if _last_tm_y is None or abs(ty - _last_tm_y) >= _TM_Y_THRESHOLD_UNITS:
                     line_ends.append(len(indexed_fragments))
                     _last_tm_y = ty
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 line_ends.append(len(indexed_fragments))
 
         elif op == "Tj" and operands:
@@ -951,7 +957,7 @@ def _build_scramble_bytes_pairs(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except (TypeError, AttributeError):
+            except TypeError, AttributeError:
                 pass
 
         elif op == "TJ" and operands:
@@ -963,7 +969,7 @@ def _build_scramble_bytes_pairs(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except (TypeError, AttributeError):
+            except TypeError, AttributeError:
                 pass
 
     if not indexed_fragments:
@@ -999,9 +1005,7 @@ def _build_scramble_bytes_pairs(
                 pos += 1
                 continue
 
-            match = _find_match_at_position(
-                pos, n, frags_in_line, always_normalised, never_cfg.phrases, numeric_id_map
-            )
+            match = _find_match_at_position(pos, n, frags_in_line, always_normalised, never_cfg.phrases, numeric_id_map)
             if match:
                 kind, replacement, end = match
                 for i in range(pos, end + 1):
@@ -1022,11 +1026,14 @@ def _build_scramble_bytes_pairs(
     # Step 1d: assign default (scramble) to all unmatched fragments.
     for i in range(total_frags):
         if dispositions[i] is None:
-            _, frag = indexed_fragments[i]
-            if frag.font in bold_fonts or _is_builtin_protected(frag.decoded):
+            if retain_descriptions:
                 dispositions[i] = "protected"
             else:
-                dispositions[i] = "scramble"
+                _, frag = indexed_fragments[i]
+                if frag.font in bold_fonts or _is_builtin_protected(frag.decoded):
+                    dispositions[i] = "protected"
+                else:
+                    dispositions[i] = "scramble"
 
     # ------------------------------------------------------------------
     # Phase 2 — Build bytes pairs.
@@ -1155,7 +1162,7 @@ def _build_font_maps(
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except (AttributeError, KeyError, TypeError):
+    except AttributeError, KeyError, TypeError:
         return forward_maps, reverse_maps, frozenset()
 
     for fname in font_dict:
@@ -1179,7 +1186,7 @@ def _build_font_maps(
                     rev[uc] = gb
             forward_maps[str(fname)] = fwd
             reverse_maps[str(fname)] = rev
-        except (AttributeError, KeyError, TypeError):
+        except AttributeError, KeyError, TypeError:
             continue
 
     return forward_maps, reverse_maps, frozenset(bold_fonts)
@@ -1206,7 +1213,7 @@ def _build_font_maps_v2(
     try:
         res = pike_page.obj.get("/Resources", pikepdf.Dictionary())
         font_dict = res.get("/Font", pikepdf.Dictionary()) if res else pikepdf.Dictionary()
-    except (AttributeError, KeyError, TypeError):
+    except AttributeError, KeyError, TypeError:
         return font_encodings, reverse_maps, frozenset()
 
     for fname in font_dict:
@@ -1241,7 +1248,7 @@ def _build_font_maps_v2(
                 is_identity_h=is_identity_h,
             )
             reverse_maps[fname_str] = rev
-        except (AttributeError, KeyError, TypeError):
+        except AttributeError, KeyError, TypeError:
             continue
 
     return font_encodings, reverse_maps, frozenset(bold_fonts)
@@ -1252,6 +1259,7 @@ def anonymise_pdf(
     output_path: Path | None = None,
     always_anonymise_path: Path | None = None,
     never_anonymise_path: Path | None = None,
+    retain_descriptions: bool = False,
     debug: bool = False,
 ) -> Path:
     """Anonymise a single PDF using exclusion-based full-page letter scrambling.
@@ -1271,6 +1279,13 @@ def anonymise_pdf(
             When ``None``, only the bundled system file is used.
         never_anonymise_path: Path to a user ``never_anonymise.toml``.
             When ``None``, only the bundled system file is used.
+        retain_descriptions: When ``True``, disable default letter-scrambling
+            so that only always-anonymise replacements and numeric ID
+            substitutions (sort codes, account numbers, card numbers) are
+            applied.  Transaction descriptions and other free text are left
+            untouched.  Requires a user ``always_anonymise.toml`` to be
+            provided — otherwise sensitive names and addresses would remain
+            un-anonymised.
         debug: When ``True``, print diagnostic information about config loading,
             numeric ID detection, and per-page pair building.
 
@@ -1279,6 +1294,8 @@ def anonymise_pdf(
 
     Raises:
         FileNotFoundError: If *input_path* does not exist.
+        ValueError: If *retain_descriptions* is ``True`` but no user
+            *always_anonymise_path* was provided.
     """
 
     def _dbg(msg: str) -> None:
@@ -1288,6 +1305,11 @@ def anonymise_pdf(
     input_path = Path(input_path)
     if not input_path.exists():
         raise FileNotFoundError(f"Input PDF not found: {input_path}")
+
+    if retain_descriptions and always_anonymise_path is None:
+        raise ValueError(
+            "retain_descriptions requires a user always_anonymise.toml — sensitive names and addresses would otherwise remain un-anonymised"
+        )
 
     # Load configs.
     always_cfg = _load_always_anonymise(
@@ -1362,6 +1384,7 @@ def anonymise_pdf(
                 reverse_maps,
                 bold_fonts,
                 numeric_id_map=numeric_id_map,
+                retain_descriptions=retain_descriptions,
             )
             _dbg(f"page {page_num}: {len(pairs)} pair(s) built")
             if debug:

@@ -4,7 +4,8 @@ bank_statement_anonymiser — exclusion-based full-page PDF anonymisation librar
 Public API
 ----------
     anonymise_pdf(input_path, output_path=None, always_anonymise_path=None,
-                  never_anonymise_path=None, debug=False) -> Path
+                  never_anonymise_path=None, retain_descriptions=False,
+                  debug=False) -> Path
 """
 
 from importlib.metadata import version

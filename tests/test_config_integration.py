@@ -43,12 +43,7 @@ def _make_pdf_with_text(tmp_path: Path, *lines: str, filename: str = "src.pdf") 
     parts = [b"BT\n/F1 12 Tf\n50 750 Td\n"]
     for i, line in enumerate(lines):
         encoded = line.encode("latin-1")
-        escaped = (
-            encoded
-            .replace(b"\\", b"\\\\")
-            .replace(b"(", b"\\(")
-            .replace(b")", b"\\)")
-        )
+        escaped = encoded.replace(b"\\", b"\\\\").replace(b"(", b"\\(").replace(b")", b"\\)")
         parts.append(b"(" + escaped + b") Tj\n")
         if i < len(lines) - 1:
             parts.append(b"0 -20 Td\n")
@@ -254,7 +249,8 @@ class TestConfigPrecedence:
         never = _write_toml(tmp_path / "never.toml", 'exclude = ["DoubleRule"]\n')
         out = tmp_path / "out.pdf"
         anonymise_pdf(
-            src, output_path=out,
+            src,
+            output_path=out,
             always_anonymise_path=always,
             never_anonymise_path=never,
         )
@@ -265,14 +261,13 @@ class TestConfigPrecedence:
     @pytest.mark.unit
     def test_both_configs_coexist_on_same_page(self, mock_random_source, tmp_path):
         """always and never rules applied simultaneously on one page."""
-        src = _make_pdf_with_text(
-            tmp_path, "ReplaceMe", "KeepMe", "Scrambleme", filename="src.pdf"
-        )
+        src = _make_pdf_with_text(tmp_path, "ReplaceMe", "KeepMe", "Scrambleme", filename="src.pdf")
         always = _write_toml(tmp_path / "always.toml", '"ReplaceMe" = "WasReplaced"\n')
         never = _write_toml(tmp_path / "never.toml", 'exclude = ["KeepMe"]\n')
         out = tmp_path / "out.pdf"
         anonymise_pdf(
-            src, output_path=out,
+            src,
+            output_path=out,
             always_anonymise_path=always,
             never_anonymise_path=never,
         )
@@ -298,9 +293,7 @@ class TestUserVsSystemConfig:
         # verifying the user replacement is applied.  The system always.toml is
         # currently empty, so any user key exercises the merge path without clash.
         src = _make_pdf_with_text(tmp_path, "UserOverride", filename="src.pdf")
-        user_always = _write_toml(
-            tmp_path / "user_always.toml", '"UserOverride" = "UserValue"\n'
-        )
+        user_always = _write_toml(tmp_path / "user_always.toml", '"UserOverride" = "UserValue"\n')
         out = tmp_path / "out.pdf"
         anonymise_pdf(src, output_path=out, always_anonymise_path=user_always)
         texts = _extract_all_text(out)
@@ -313,9 +306,7 @@ class TestUserVsSystemConfig:
         # User config adds "CustomProtected".
         # Both should be protected after merge.
         src = _make_pdf_with_text(tmp_path, "DD", "CustomProtected", filename="src.pdf")
-        user_never = _write_toml(
-            tmp_path / "user_never.toml", 'exclude = ["CustomProtected"]\n'
-        )
+        user_never = _write_toml(tmp_path / "user_never.toml", 'exclude = ["CustomProtected"]\n')
         out = tmp_path / "out.pdf"
         anonymise_pdf(src, output_path=out, never_anonymise_path=user_never)
         texts = _extract_all_text(out)

@@ -36,6 +36,12 @@ def main(argv: list[str] | None = None) -> None:
         help="Path to a user never_anonymise.toml",
     )
     parser.add_argument(
+        "--retain-descriptions",
+        action="store_true",
+        help="Disable default letter-scrambling; only apply always-anonymise "
+        "replacements and numeric ID substitutions (requires --always-anonymise)",
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Print diagnostic information to stdout (may include sensitive values from your config)",
@@ -55,6 +61,7 @@ def main(argv: list[str] | None = None) -> None:
             output_path=args.output,
             always_anonymise_path=args.always_anonymise,
             never_anonymise_path=args.never_anonymise,
+            retain_descriptions=args.retain_descriptions,
             debug=args.debug,
         )
     except (FileNotFoundError, ValueError, OSError) as exc:

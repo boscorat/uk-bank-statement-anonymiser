@@ -55,12 +55,17 @@ class TestCliAnonymise:
     ):
         """Running main() with config flags should pass them through."""
         output = tmp_path / "output.pdf"
-        main([
-            str(simple_text_pdf),
-            "-o", str(output),
-            "--always-anonymise", str(always_anonymise_config),
-            "--never-anonymise", str(never_anonymise_config),
-        ])
+        main(
+            [
+                str(simple_text_pdf),
+                "-o",
+                str(output),
+                "--always-anonymise",
+                str(always_anonymise_config),
+                "--never-anonymise",
+                str(never_anonymise_config),
+            ]
+        )
         assert output.exists()
 
     @pytest.mark.unit
