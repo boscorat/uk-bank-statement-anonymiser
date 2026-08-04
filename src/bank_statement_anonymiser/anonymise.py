@@ -588,7 +588,7 @@ def _collect_fragments(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except TypeError, AttributeError:
+            except (TypeError, AttributeError):
                 current_font = ""
 
         elif op == "Tj" and operands:
@@ -597,7 +597,7 @@ def _collect_fragments(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except TypeError, AttributeError:
+            except (TypeError, AttributeError):
                 pass
 
         elif op == "TJ" and operands:
@@ -609,7 +609,7 @@ def _collect_fragments(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             fragments.append(_Fragment(raw=raw, font=current_font, decoded=dec))
-            except TypeError, AttributeError:
+            except (TypeError, AttributeError):
                 pass
 
     return fragments
@@ -697,7 +697,7 @@ def _reencode_fragment(
             else:
                 # For single-byte fonts, all codes should be 0-255
                 return bytes(rev[c] for c in text)
-        except KeyError, ValueError:
+        except (KeyError, ValueError):
             return None
     else:
         try:
@@ -934,7 +934,7 @@ def _build_scramble_bytes_pairs(
         if op == "Tf" and operands:
             try:
                 current_font = str(operands[0])
-            except TypeError, AttributeError:
+            except (TypeError, AttributeError):
                 current_font = ""
 
         elif op in _LINE_BREAK_OPS:
@@ -948,7 +948,7 @@ def _build_scramble_bytes_pairs(
                 if _last_tm_y is None or abs(ty - _last_tm_y) >= _TM_Y_THRESHOLD_UNITS:
                     line_ends.append(len(indexed_fragments))
                     _last_tm_y = ty
-            except ValueError, TypeError:
+            except (ValueError, TypeError):
                 line_ends.append(len(indexed_fragments))
 
         elif op == "Tj" and operands:
@@ -957,7 +957,7 @@ def _build_scramble_bytes_pairs(
                 if raw:
                     dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                     indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except TypeError, AttributeError:
+            except (TypeError, AttributeError):
                 pass
 
         elif op == "TJ" and operands:
@@ -969,7 +969,7 @@ def _build_scramble_bytes_pairs(
                         if raw:
                             dec = _decode_raw_bytes_safe(raw, current_font, forward_maps, font_encodings)
                             indexed_fragments.append((instr_idx, _Fragment(raw=raw, font=current_font, decoded=dec)))
-            except TypeError, AttributeError:
+            except (TypeError, AttributeError):
                 pass
 
     if not indexed_fragments:
