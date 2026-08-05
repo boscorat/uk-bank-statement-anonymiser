@@ -85,7 +85,6 @@ git push origin v0.2.3
 The `publish.yml` workflow will trigger automatically:
 - Builds sdist and wheel
 - Publishes to PyPI
-- Uploads `.whl` and `.tar.gz` as release assets
 
 Verify at: https://pypi.org/project/uk-bank-statement-anonymiser/
 
