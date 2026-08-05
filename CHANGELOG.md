@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-04
+
+### Added
+
+- feat: add retain_descriptions flag to preserve transaction descriptions (#38)
+- docs: document retain_descriptions flag in README
+
 ## [0.2.1] - 2026-07-30
 
 ### Added
