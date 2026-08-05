@@ -112,7 +112,7 @@ The Trusted Publisher on PyPI must match exactly:
 
 ```bash
 git tag -d v0.2.3
-git push origin :refs/tags/v0.2.3
+git push --delete origin v0.2.3
 ```
 
 Then re-run step 6.
