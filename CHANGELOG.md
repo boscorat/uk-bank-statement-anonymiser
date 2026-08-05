@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-08-05
+
+## Overview
+No breaking changes and one new feature.
+You can now pass a flag to prevent the scrambling of text during an anonymise run.
+You'll need to provide a user always anonymise file and specify the name and address details you do want to anonymise, but this will then not anonymise the transaction descriptions.
+This can be useful for tests and demonstrations, but you should be careful before sharing these documents as the recipient will have certain information that could be used to verify your identity e.g. 'How do you pay your gas bill and what was the last payment?'
+
+## What's Changed
+* ci: simplify release workflow by @boscorat in https://github.com/boscorat/uk-bank-statement-anonymiser/pull/41
+* 37 feature enable the retention of transaction descriptions by @boscorat in https://github.com/boscorat/uk-bank-statement-anonymiser/pull/43
+
+**Full Changelog**: https://github.com/boscorat/uk-bank-statement-anonymiser/compare/v0.2.2...v0.2.3
+
 ## [0.2.2] - 2026-08-04
 
 ### Added
