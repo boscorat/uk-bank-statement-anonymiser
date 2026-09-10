@@ -152,4 +152,4 @@ The review template includes a full checklist. Key items:
 
 ## Questions?
 
-If you get stuck or have questions, comment on the issue or start a [GitHub Discussion](https://github.com/boscorat/uk-bank-statement-anonymiser/discussions).
+If you get stuck or have questions, comment on the issue or start a [GitHub Discussion](https://github.com/boscorat/openstan/discussions/categories/q-a).
