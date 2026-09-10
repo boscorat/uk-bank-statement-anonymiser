@@ -233,6 +233,16 @@ anonymise-pdf statement.pdf --debug     # prints diagnostic info; may expose con
 
 See [Custom rules](#custom-rules) for TOML file format.
 
+## Community
+
+| Channel | Purpose |
+|---------|---------|
+| [GitHub Discussions](https://github.com/boscorat/openstan/discussions) | Questions, support, bank requests, ideas |
+| [openstan.org](https://openstan.org) | User guide, tutorials, screen references |
+| [LinkedIn](https://linkedin.com/company/openstan) | Release announcements, use cases |
+| [Bluesky](https://bsky.app/profile/openstan.org) | Quick updates, tips |
+| [YouTube](https://youtube.com/@openstan) | Video tutorials |
+
 ## Related projects
 
 This library is used by other projects in the boscorat ecosystem:
