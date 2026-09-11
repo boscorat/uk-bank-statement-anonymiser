@@ -6,6 +6,11 @@
 [![CI](https://github.com/boscorat/uk-bank-statement-anonymiser/actions/workflows/test.yml/badge.svg)](https://github.com/boscorat/uk-bank-statement-anonymiser/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **Part of the [openstan](https://github.com/boscorat/openstan) ecosystem.**
+> Can be used standalone via [PyPI](https://pypi.org/project/uk-bank-statement-anonymiser/) or as part of the openstan desktop application.
+> **Found a bug?** [Open an issue](https://github.com/boscorat/uk-bank-statement-anonymiser/issues) on this repo.
+> **Need help?** [Start a discussion](https://github.com/boscorat/openstan/discussions) on openstan.
+
 ## Why?
 
 You need to share bank statements with your accountant, solicitor, or lender — but the PDF contains sensitive data: account numbers, sort codes, IBANs, card numbers, and transaction details.
