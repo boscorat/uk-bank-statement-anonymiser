@@ -225,7 +225,7 @@ anonymise-pdf statement.pdf
 anonymise-pdf statement.pdf -o output.pdf
 anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
 anonymise-pdf statement.pdf --always-anonymise rules.toml --retain-descriptions
-anonymise-pdf statement.pdf --debug     # prints diagnostic info; deprecated — use logging instead
+anonymise-pdf statement.pdf --debug     # deprecated — use logging instead (see Debugging)
 ```
 
 | Flag | Description |

@@ -80,22 +80,25 @@ Check the system `never_anonymise_system.toml` bundled with the library. Common 
 - Bank names and URLs
 - Payment type codes (e.g., "FASTER PAYMENTS", "DIRECT DEBIT")
 
-If you want to anonymise one of these phrases:
+If you want to anonymise one of these system-protected phrases:
 
-1. Create a user `never_anonymise.toml` that removes it:
+1. Create a user `always_anonymise.toml` with the phrase to force-anonymise:
    ```toml
-   exclude = []
+   "BALANCE BROUGHT FORWARD" = "PREVIOUS BALANCE"
+   "FASTER PAYMENTS" = "PAYMENT TYPE"
    ```
+   
+   **Note:** `never_anonymise` cannot remove system protections (it merges as a union). Use `always_anonymise` instead, which takes precedence.
 
 2. Pass it to `anonymise_pdf()`:
    ```python
    anonymise_pdf(
        "statement.pdf",
-       never_anonymise_path="never_anonymise.toml"
+       always_anonymise_path="always_anonymise.toml"
    )
    ```
 
-This overrides the system defaults for protected phrases.
+This forces anonymisation of the specified phrases.
 
 ---
 

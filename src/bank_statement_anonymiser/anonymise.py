@@ -137,7 +137,7 @@ from bank_statement_anonymiser._shared import (
     _rewrite_page_content_stream,
     _strip_numeric_separators,
 )
-from bank_statement_anonymiser.logging_config import get_logger, set_verbosity
+from bank_statement_anonymiser.logging_config import get_logger, get_verbosity, set_verbosity
 
 logger = get_logger(__name__)
 
@@ -1303,6 +1303,7 @@ def anonymise_pdf(
             *always_anonymise_path* was provided.
     """
 
+    prior_verbosity: str | None = None
     if debug:
         warnings.warn(
             "The 'debug' parameter is deprecated since v1.0.0. Use Python's logging module to configure verbosity instead. "
@@ -1311,6 +1312,7 @@ def anonymise_pdf(
             stacklevel=2,
         )
         # Temporarily enable verbose logging for this call
+        prior_verbosity = get_verbosity()
         set_verbosity("verbose")
 
     input_path = Path(input_path)
@@ -1424,6 +1426,9 @@ def anonymise_pdf(
         raise ValueError(f"Failed to anonymise or save PDF: {e}") from e
     finally:
         pike_doc.close()
+        # Restore prior verbosity if debug=True was used
+        if prior_verbosity is not None:
+            set_verbosity(prior_verbosity)
 
     logger.info(f"Anonymised: {input_path.name} -> {output_path.name} ({total_pairs} scramble pair(s))")
     return output_path
