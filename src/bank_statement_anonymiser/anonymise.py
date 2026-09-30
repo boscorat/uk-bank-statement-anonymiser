@@ -106,6 +106,7 @@ Example
 
 from __future__ import annotations
 
+import logging
 import re
 import tomllib
 import warnings
@@ -136,6 +137,9 @@ from bank_statement_anonymiser._shared import (
     _rewrite_page_content_stream,
     _strip_numeric_separators,
 )
+from bank_statement_anonymiser.logging_config import get_logger, get_verbosity, set_verbosity
+
+logger = get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -1286,8 +1290,9 @@ def anonymise_pdf(
             untouched.  Requires a user ``always_anonymise.toml`` to be
             provided — otherwise sensitive names and addresses would remain
             un-anonymised.
-        debug: When ``True``, print diagnostic information about config loading,
-            numeric ID detection, and per-page pair building.
+        debug: Deprecated since v1.0.0. Use Python's ``logging`` module to
+            configure verbosity instead. When ``True``, enables debug-level
+            logging via the logger factory (see :func:`set_verbosity`).
 
     Returns:
         Path to the anonymised output PDF.
@@ -1298,9 +1303,17 @@ def anonymise_pdf(
             *always_anonymise_path* was provided.
     """
 
-    def _dbg(msg: str) -> None:
-        if debug:
-            print(f"[DEBUG] {msg}")
+    prior_verbosity: str | None = None
+    if debug:
+        warnings.warn(
+            "The 'debug' parameter is deprecated since v1.0.0. Use Python's logging module to configure verbosity instead. "
+            "Call set_verbosity('verbose') to enable debug-level output.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        # Temporarily enable verbose logging for this call
+        prior_verbosity = get_verbosity()
+        set_verbosity("verbose")
 
     input_path = Path(input_path)
     if not input_path.exists():
@@ -1321,8 +1334,8 @@ def anonymise_pdf(
         user_path=Path(never_anonymise_path) if never_anonymise_path is not None else None,
     )
 
-    _dbg(f"always_anonymise: {len(always_cfg.replacements)} rule(s): {list(always_cfg.replacements.keys())}")
-    _dbg(f"never_anonymise: {len(never_cfg.phrases)} phrase(s)")
+    logger.debug(f"always_anonymise: {len(always_cfg.replacements)} rule(s): {list(always_cfg.replacements.keys())}")
+    logger.debug(f"never_anonymise: {len(never_cfg.phrases)} phrase(s)")
 
     if output_path is None:
         output_path = input_path.with_name(f"{_ANONYMISED_PREFIX}{input_path.stem}{input_path.suffix}")
@@ -1353,18 +1366,18 @@ def anonymise_pdf(
                     all_text_parts.append(frag.decoded)
         all_text = " ".join(all_text_parts)
 
-        _dbg(f"pre-pass collected {len(all_text_parts)} fragment(s), {len(all_text)} chars total")
-        _dbg(f"all_text (first 500 chars): {all_text[:500]!r}")
+        logger.debug(f"pre-pass collected {len(all_text_parts)} fragment(s), {len(all_text)} chars total")
+        logger.debug(f"all_text (first 500 chars): {all_text[:500]!r}")
 
         # Build user numeric overrides (canonical raw digits -> replacement raw digits).
         user_numeric_overrides = _extract_user_numeric_overrides(always_cfg)
-        _dbg(f"user_numeric_overrides (canonical digits): {user_numeric_overrides}")
+        logger.debug(f"user_numeric_overrides (canonical digits): {user_numeric_overrides}")
 
         # Build the document-level numeric ID map.
         numeric_id_map = _detect_numeric_ids(all_text, user_numeric_overrides)
-        _dbg(f"numeric_id_map ({len(numeric_id_map)} entry/entries):")
+        logger.debug(f"numeric_id_map ({len(numeric_id_map)} entry/entries):")
         for k, v in numeric_id_map.items():
-            _dbg(f"  {k!r} -> {v!r}")
+            logger.debug(f"  {k!r} -> {v!r}")
 
         # ------------------------------------------------------------------
         # Main per-page pass.
@@ -1372,7 +1385,7 @@ def anonymise_pdf(
         for page_num, pike_page in enumerate(pike_doc.pages, start=1):
             forward_maps, reverse_maps, bold_fonts = _build_font_maps(pike_page)
             font_encodings, _, _ = _build_font_maps_v2(pike_page)
-            _dbg(f"page {page_num}: fonts={list(forward_maps.keys())}, bold={list(bold_fonts)}")
+            logger.debug(f"page {page_num}: fonts={list(forward_maps.keys())}, bold={list(bold_fonts)}")
 
             pairs = _build_scramble_bytes_pairs(
                 pike_page,
@@ -1386,8 +1399,8 @@ def anonymise_pdf(
                 numeric_id_map=numeric_id_map,
                 retain_descriptions=retain_descriptions,
             )
-            _dbg(f"page {page_num}: {len(pairs)} pair(s) built")
-            if debug:
+            logger.debug(f"page {page_num}: {len(pairs)} pair(s) built")
+            if logger.isEnabledFor(logging.DEBUG):
                 for orig_b, repl_b in pairs[:20]:  # cap at 20 to avoid flooding
                     try:
                         orig_s = orig_b.decode("latin-1")
@@ -1397,9 +1410,9 @@ def anonymise_pdf(
                         repl_s = repl_b.decode("latin-1")
                     except UnicodeDecodeError:
                         repl_s = repr(repl_b)
-                    print(f"[DEBUG]   pair: {orig_s!r} -> {repl_s!r}")
+                    logger.debug(f"  pair: {orig_s!r} -> {repl_s!r}")
                 if len(pairs) > 20:
-                    print(f"[DEBUG]   ... ({len(pairs) - 20} more pair(s) not shown)")
+                    logger.debug(f"  ... ({len(pairs) - 20} more pair(s) not shown)")
 
             if pairs:
                 _rewrite_page_content_stream(pike_page, pike_doc, pairs)
@@ -1413,6 +1426,9 @@ def anonymise_pdf(
         raise ValueError(f"Failed to anonymise or save PDF: {e}") from e
     finally:
         pike_doc.close()
+        # Restore prior verbosity if debug=True was used
+        if prior_verbosity is not None:
+            set_verbosity(prior_verbosity)
 
-    print(f"Anonymised: {input_path.name} -> {output_path.name} ({total_pairs} scramble pair(s))")
+    logger.info(f"Anonymised: {input_path.name} -> {output_path.name} ({total_pairs} scramble pair(s))")
     return output_path

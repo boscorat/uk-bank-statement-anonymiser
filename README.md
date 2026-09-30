@@ -225,7 +225,7 @@ anonymise-pdf statement.pdf
 anonymise-pdf statement.pdf -o output.pdf
 anonymise-pdf statement.pdf --always-anonymise rules.toml --never-anonymise protected.toml
 anonymise-pdf statement.pdf --always-anonymise rules.toml --retain-descriptions
-anonymise-pdf statement.pdf --debug     # prints diagnostic info; may expose config values
+anonymise-pdf statement.pdf --debug     # deprecated — use logging instead (see Debugging)
 ```
 
 | Flag | Description |
@@ -234,9 +234,41 @@ anonymise-pdf statement.pdf --debug     # prints diagnostic info; may expose con
 | `--always-anonymise` | TOML file with forced replacements |
 | `--never-anonymise` | TOML file with protected phrases |
 | `--retain-descriptions` | Disable letter-scrambling; only apply `always_anonymise` rules and numeric IDs (requires `--always-anonymise`) |
-| `--debug` | Print diagnostic info to stdout |
+| `--debug` | Deprecated since v1.0.0. Use Python's logging module instead. |
 
 See [Custom rules](#custom-rules) for TOML file format.
+
+## Debugging
+
+uk-bank-statement-anonymiser provides comprehensive logging to help diagnose issues.
+
+### Enable verbose logging
+
+By default, the library logs at INFO level. Enable DEBUG-level logging:
+
+**Python API:**
+```python
+from bank_statement_anonymiser import anonymise_pdf, set_verbosity
+
+set_verbosity("verbose")
+result = anonymise_pdf("statement.pdf", "anonymised.pdf")
+```
+
+**With file output:**
+```python
+import logging
+from bank_statement_anonymiser import anonymise_pdf, set_verbosity
+
+# Configure file handler
+handler = logging.FileHandler("anonymiser.log")
+handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"))
+logging.getLogger("bank_statement_anonymiser").addHandler(handler)
+
+set_verbosity("verbose")
+anonymise_pdf("statement.pdf")
+```
+
+See [Debugging](docs/debugging.md) for detailed logging examples and [Troubleshooting](docs/troubleshooting.md) for common issues.
 
 ## Community
 

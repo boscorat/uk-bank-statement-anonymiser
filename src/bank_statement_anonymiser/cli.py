@@ -7,6 +7,9 @@ import sys
 from pathlib import Path
 
 from bank_statement_anonymiser import __version__, anonymise_pdf
+from bank_statement_anonymiser.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -65,9 +68,11 @@ def main(argv: list[str] | None = None) -> None:
             debug=args.debug,
         )
     except (FileNotFoundError, ValueError, OSError) as exc:
+        logger.error(f"Anonymisation failed: {exc}")
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 
+    logger.info(f"Anonymised: {output}")
     print(f"Anonymised: {output}")
 
 
