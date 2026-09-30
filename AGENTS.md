@@ -84,7 +84,57 @@ ruff format src tests          # Format fix (may need uv run prefix)
 
 **Output naming:** Default is `anonymised_<stem><suffix>` alongside input (e.g., `statement.pdf` → `anonymised_statement.pdf`).
 
-**Debug mode:** Pass `debug=True` to `anonymise_pdf()` to print diagnostic info to stdout.
+## Logging
+
+The library provides a logger factory for use by consuming applications (e.g., openstan). The library itself does not configure any handlers — callers are responsible for setting up handlers (file, console, etc.) via Python's logging module.
+
+### Basic usage
+
+```python
+from bank_statement_anonymiser import get_logger, set_verbosity, anonymise_pdf
+
+# Enable debug-level logging
+set_verbosity("verbose")
+
+# Get a logger for your module
+logger = get_logger(__name__)
+logger.debug("Diagnostic info")
+
+# Use the anonymiser — logs will now include DEBUG-level output
+anonymise_pdf("statement.pdf", "anonymised.pdf")
+```
+
+### Verbosity levels
+- **normal** (default): INFO, WARNING, ERROR — suitable for production
+- **verbose**: DEBUG, INFO, WARNING, ERROR — suitable for debugging and troubleshooting
+
+### Public API
+- `get_logger(name: str) -> logging.Logger` — Get or create a logger by module name
+- `set_verbosity(verbosity: "normal" | "verbose")` — Set verbosity level for all library loggers
+- `get_verbosity() -> "normal" | "verbose"` — Get current verbosity setting
+
+### Example: Logging with file output
+
+```python
+import logging
+from bank_statement_anonymiser import get_logger, set_verbosity, anonymise_pdf
+
+# Configure file handler
+file_handler = logging.FileHandler("anonymiser.log")
+file_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"))
+
+# Set up root logger to capture all library logs
+logging.getLogger("bank_statement_anonymiser").addHandler(file_handler)
+
+# Enable verbose logging
+set_verbosity("verbose")
+
+# Anonymise — logs go to both stdout and file
+anonymise_pdf("statement.pdf")
+```
+
+### Deprecation note
+The `debug` parameter to `anonymise_pdf()` is deprecated as of v1.0.0. Use `set_verbosity("verbose")` instead and configure Python's logging module for output.
 
 ## Gotchas for agents
 
