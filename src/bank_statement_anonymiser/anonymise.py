@@ -137,7 +137,7 @@ from bank_statement_anonymiser._shared import (
     _rewrite_page_content_stream,
     _strip_numeric_separators,
 )
-from bank_statement_anonymiser.logging_config import get_logger
+from bank_statement_anonymiser.logging_config import get_logger, set_verbosity
 
 logger = get_logger(__name__)
 
@@ -1310,6 +1310,8 @@ def anonymise_pdf(
             DeprecationWarning,
             stacklevel=2,
         )
+        # Temporarily enable verbose logging for this call
+        set_verbosity("verbose")
 
     input_path = Path(input_path)
     if not input_path.exists():

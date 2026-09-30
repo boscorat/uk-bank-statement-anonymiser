@@ -82,6 +82,7 @@ To capture logs to a file for later analysis:
 
 ```python
 import logging
+import logging.handlers
 from pathlib import Path
 from bank_statement_anonymiser import anonymise_pdf, set_verbosity
 

@@ -68,7 +68,7 @@ def main(argv: list[str] | None = None) -> None:
             debug=args.debug,
         )
     except (FileNotFoundError, ValueError, OSError) as exc:
-        logger.exception("Anonymisation failed")
+        logger.error(f"Anonymisation failed: {exc}")
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
 

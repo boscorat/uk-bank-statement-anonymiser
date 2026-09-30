@@ -75,8 +75,9 @@ def set_verbosity(verbosity: Verbosity) -> None:
             Invalid values are silently ignored.
 
     Note:
-        This affects loggers created via :func:`get_logger`. Existing
-        logger references will be updated immediately.
+        This affects loggers created via :func:`get_logger`. Loggers that have
+        been explicitly configured by the consumer to a different level are
+        preserved. Only factory-managed loggers (at INFO or DEBUG) are updated.
     """
     global _VERBOSITY
 
@@ -85,10 +86,12 @@ def set_verbosity(verbosity: Verbosity) -> None:
 
     _VERBOSITY = verbosity
 
-    # Update level for all existing loggers
+    # Update level for all existing loggers, but preserve consumer-configured levels
+    target_level = logging.DEBUG if verbosity == "verbose" else logging.INFO
     for logger in _LOGGERS.values():
-        level = logging.DEBUG if verbosity == "verbose" else logging.INFO
-        logger.setLevel(level)
+        # Only update if logger is at factory-managed levels (INFO or DEBUG)
+        if logger.level in (logging.INFO, logging.DEBUG):
+            logger.setLevel(target_level)
 
 
 def get_verbosity() -> Verbosity:

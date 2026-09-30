@@ -153,8 +153,7 @@ class TestConsumerConfiguration:
         factory_logger = get_logger(logger_name)
         assert factory_logger.level == logging.ERROR
 
-        # Switch verbosity — should not change consumer's ERROR
-        # Note: set_verbosity DOES change levels of loggers in the factory cache,
-        # but this test verifies that if a logger was already configured by the
-        # consumer to ERROR, calling set_verbosity won't retroactively update it
-        # in this case. This is a limitation of the current implementation.
+        # Switch verbosity — should NOT change consumer's ERROR level
+        # since it was explicitly configured outside the factory
+        set_verbosity("verbose")
+        assert factory_logger.level == logging.ERROR

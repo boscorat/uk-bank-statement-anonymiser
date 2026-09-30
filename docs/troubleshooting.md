@@ -242,7 +242,7 @@ exclude = [
 
 Common mistakes:
 - Forgetting quotes around keys/values
-- Using `=` instead of `=` (different Unicode)
+- Using full-width equals `＝` instead of ASCII `=`
 - Mismatched brackets `[` vs `]`
 
 ### Cause: User config not being loaded
