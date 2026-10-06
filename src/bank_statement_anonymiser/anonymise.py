@@ -161,14 +161,44 @@ _TM_Y_THRESHOLD_UNITS: float = 2.0
 
 
 # ---------------------------------------------------------------------------
-# Bundled resource helpers
+# Bundled system config loading (at import time, supports frozen apps)
 # ---------------------------------------------------------------------------
 
 
-def _bundled_path(filename: str) -> Path:
-    """Return the filesystem path to a bundled package resource file."""
-    with resources.as_file(resources.files("bank_statement_anonymiser").joinpath(filename)) as p:
-        return Path(p)
+def _load_system_config_as_dict(filename: str) -> dict:
+    """Load a bundled TOML system config file at import time.
+
+    This loads the config into memory immediately, avoiding the context-manager
+    lifetime issue that occurs in frozen apps (cx_Freeze, PyInstaller) where
+    importlib.resources.as_file() tries to extract resources from a zip archive.
+
+    Args:
+        filename: Name of the .toml file to load (e.g., "always_anonymise_system.toml").
+
+    Returns:
+        Parsed TOML content as a dict. Returns empty dict if load fails.
+
+    Raises:
+        (Logged but not re-raised): Logs errors if file cannot be read.
+    """
+    try:
+        # Read the resource bytes directly
+        resource = resources.files("bank_statement_anonymiser").joinpath(filename)
+        if not hasattr(resource, "read_bytes"):
+            logger.warning(f"Could not read bundled config '{filename}': resource API incompatible")
+            return {}
+
+        toml_bytes = resource.read_bytes()
+        toml_text = toml_bytes.decode("utf-8")
+        return tomllib.loads(toml_text)
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as e:
+        logger.warning(f"Failed to load bundled config '{filename}': {e}")
+        return {}
+
+
+# Load system configs at module import time (cached)
+_ALWAYS_ANONYMISE_SYSTEM_CONFIG: dict = _load_system_config_as_dict("always_anonymise_system.toml")
+_NEVER_ANONYMISE_SYSTEM_CONFIG: dict = _load_system_config_as_dict("never_anonymise_system.toml")
 
 
 # ---------------------------------------------------------------------------
@@ -218,34 +248,41 @@ def _normalise_phrase(text: str) -> str:
 
 
 def _load_always_anonymise(
-    system_path: Path,
     user_path: Path | None,
 ) -> _AlwaysAnonymiseConfig:
     """Load and merge always-anonymise replacement rules.
 
-    The system file is always loaded.  The user file (if provided)
+    The system rules are loaded from the bundled config at import time
+    (cached in _ALWAYS_ANONYMISE_SYSTEM_CONFIG). The user file (if provided)
     is merged on top — user entries win on key clash.
+
+    Args:
+        user_path: Path to an optional user-defined always_anonymise.toml file.
+            If provided, its rules override system rules on key clash.
+
+    Returns:
+        Merged configuration with system rules and user overrides.
+
+    Raises:
+        FileNotFoundError: If user_path is provided but does not exist.
+        ValueError: If user_path cannot be read.
     """
 
-    def _read_toml(path: Path | None, is_user: bool = False) -> dict[str, str]:
+    def _read_user_toml(path: Path | None) -> dict[str, str]:
         if path is None:
             return {}
         if not path.exists():
-            if is_user:
-                raise FileNotFoundError(f"User always_anonymise config not found: {path}")
-            return {}
+            raise FileNotFoundError(f"User always_anonymise config not found: {path}")
         try:
             with path.open("rb") as fh:
                 data = tomllib.load(fh)
             # Top-level keys only — flat "original" = "replacement" format.
             return {k: v for k, v in data.items() if isinstance(v, str)}
         except (IsADirectoryError, PermissionError, OSError) as e:
-            if is_user:
-                raise ValueError(f"Failed to load user config '{path}': {e}") from e
-            return {}
+            raise ValueError(f"Failed to load user config '{path}': {e}") from e
 
-    system_rules = _read_toml(system_path)
-    user_rules = _read_toml(user_path, is_user=True)
+    system_rules = {k: v for k, v in _ALWAYS_ANONYMISE_SYSTEM_CONFIG.items() if isinstance(v, str)}
+    user_rules = _read_user_toml(user_path)
 
     # Merge: system first, user overwrites on clash.
     merged = {**system_rules, **user_rules}
@@ -253,21 +290,27 @@ def _load_always_anonymise(
 
 
 def _load_never_anonymise(
-    system_path: Path,
     user_path: Path | None,
 ) -> _NeverAnonymiseConfig:
     """Load and merge never-anonymise protected phrases.
 
-    Both system and user ``exclude`` lists are merged (union).
+    The system phrases are loaded from the bundled config at import time
+    (cached in _NEVER_ANONYMISE_SYSTEM_CONFIG). Both system and user
+    ``exclude`` lists are merged (union).
+
+    Args:
+        user_path: Path to an optional user-defined never_anonymise.toml file.
+            If provided, its phrases are merged with system phrases.
+
+    Returns:
+        Merged configuration with system and user phrases (union).
+
+    Raises:
+        FileNotFoundError: If user_path is provided but does not exist.
+        ValueError: If user_path cannot be read.
     """
 
-    def _read_exclude(path: Path | None, is_user: bool = False) -> list[str]:
-        if path is None:
-            return []
-        if not path.exists():
-            if is_user:
-                raise FileNotFoundError(f"User never_anonymise config not found: {path}")
-            return []
+    def _read_user_exclude(path: Path) -> list[str]:
         try:
             with path.open("rb") as fh:
                 data = tomllib.load(fh)
@@ -276,12 +319,18 @@ def _load_never_anonymise(
                 return []
             return [str(item) for item in raw]
         except (IsADirectoryError, PermissionError, OSError) as e:
-            if is_user:
-                raise ValueError(f"Failed to load user config '{path}': {e}") from e
-            return []
+            raise ValueError(f"Failed to load user config '{path}': {e}") from e
 
-    system_phrases = _read_exclude(system_path)
-    user_phrases = _read_exclude(user_path, is_user=True)
+    system_phrases = []
+    system_exclude = _NEVER_ANONYMISE_SYSTEM_CONFIG.get("exclude", [])
+    if isinstance(system_exclude, list):
+        system_phrases = [str(item) for item in system_exclude]
+
+    user_phrases = []
+    if user_path is not None:
+        if not user_path.exists():
+            raise FileNotFoundError(f"User never_anonymise config not found: {user_path}")
+        user_phrases = _read_user_exclude(user_path)
 
     combined = frozenset(p for p in (_normalise_phrase(phrase) for phrase in system_phrases + user_phrases) if p)
     return _NeverAnonymiseConfig(phrases=combined)
@@ -1326,11 +1375,9 @@ def anonymise_pdf(
 
     # Load configs.
     always_cfg = _load_always_anonymise(
-        system_path=_bundled_path("always_anonymise_system.toml"),
         user_path=Path(always_anonymise_path) if always_anonymise_path is not None else None,
     )
     never_cfg = _load_never_anonymise(
-        system_path=_bundled_path("never_anonymise_system.toml"),
         user_path=Path(never_anonymise_path) if never_anonymise_path is not None else None,
     )
 
