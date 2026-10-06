@@ -11,10 +11,9 @@ This module tests:
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
+from bank_statement_anonymiser import anonymise as anonymise_module
 from bank_statement_anonymiser.anonymise import (
     _AlwaysAnonymiseConfig,
     _load_always_anonymise,
@@ -119,7 +118,7 @@ class TestConfigDataclasses:
 
 class TestLoadAlwaysAnonymise:
     """Tests for _load_always_anonymise() — flat TOML merge, user wins on clash.
-    
+
     NOTE: System rules are now loaded from bundled config at import time.
     These tests verify the user config is properly merged with system rules.
     """
@@ -144,12 +143,30 @@ class TestLoadAlwaysAnonymise:
         assert isinstance(result, _AlwaysAnonymiseConfig)
 
     @pytest.mark.unit
-    def test_user_overrides_system_on_clash(self, tmp_path):
+    def test_user_overrides_system_on_clash(self, tmp_path, monkeypatch):
+        """Verify that user rules override system rules when keys clash.
+
+        This test mocks the system config to have known values, then verifies
+        that user values override them on key clash.
+        """
+        # Mock system config to have known values
+        system_config = {
+            "name": "system_value",
+            "address": "123 System St",
+        }
+        monkeypatch.setattr(anonymise_module, "_ALWAYS_ANONYMISE_SYSTEM_CONFIG", system_config)
+
+        # User config overrides one key and adds a new one
         user = tmp_path / "usr.toml"
-        user.write_bytes(b'"name" = "user_value"\n')
+        user.write_bytes(b'"name" = "user_value"\n"phone" = "999-999-9999"\n')
         result = _load_always_anonymise(user_path=user)
-        # User value should override (if it exists in system)
+
+        # User value should override system value
         assert result.replacements["name"] == "user_value"
+        # System value should still be present if not overridden
+        assert result.replacements["address"] == "123 System St"
+        # User-added key should be present
+        assert result.replacements["phone"] == "999-999-9999"
 
     @pytest.mark.unit
     def test_user_adds_new_keys(self, tmp_path):
@@ -196,7 +213,7 @@ class TestLoadAlwaysAnonymise:
 
 class TestLoadNeverAnonymise:
     """Tests for _load_never_anonymise() — union merge of exclude lists.
-    
+
     NOTE: System phrases are now loaded from bundled config at import time.
     These tests verify the user config is properly merged with system phrases.
     """
@@ -247,6 +264,30 @@ class TestLoadNeverAnonymise:
         assert "balance" in result.phrases
 
     @pytest.mark.unit
+    def test_system_and_user_phrases_merged_union(self, tmp_path, monkeypatch):
+        """Verify that system and user phrases are merged (union, not override).
+
+        This test mocks the system config to have known values, then verifies
+        that both system and user phrases appear in the final set.
+        """
+        # Mock system config to have known phrases
+        system_config = {"exclude": ["Balance", "Account"]}
+        monkeypatch.setattr(anonymise_module, "_NEVER_ANONYMISE_SYSTEM_CONFIG", system_config)
+
+        # User config adds new phrases
+        user = tmp_path / "usr.toml"
+        user.write_bytes(b'exclude = ["Balance", "Date", "Reference"]\n')
+        result = _load_never_anonymise(user_path=user)
+
+        # System phrases should be present
+        assert "balance" in result.phrases
+        assert "account" in result.phrases
+        # User phrases should be present
+        assert "date" in result.phrases
+        assert "reference" in result.phrases
+        # Duplicates (Balance) should only appear once
+        assert len([p for p in result.phrases if p == "balance"]) == 1
+
     def test_missing_exclude_key_returns_system_only(self, tmp_path):
         user = tmp_path / "usr.toml"
         user.write_bytes(b"# no exclude key\n")
@@ -294,7 +335,7 @@ class TestLoadNeverAnonymise:
 
 class TestBundledSystemToml:
     """Integration smoke-tests: the bundled TOML files load without error.
-    
+
     These tests verify that the system configs loaded at module import time
     contain expected entries from never_anonymise_system.toml.
     """
@@ -303,12 +344,14 @@ class TestBundledSystemToml:
     def test_bundled_always_anonymise_loads(self):
         """always_anonymise_system.toml must load at import time (currently empty)."""
         from bank_statement_anonymiser.anonymise import _ALWAYS_ANONYMISE_SYSTEM_CONFIG
+
         assert isinstance(_ALWAYS_ANONYMISE_SYSTEM_CONFIG, dict)
 
     @pytest.mark.unit
     def test_bundled_never_anonymise_loads(self):
         """never_anonymise_system.toml must load at import time."""
         from bank_statement_anonymiser.anonymise import _NEVER_ANONYMISE_SYSTEM_CONFIG
+
         assert isinstance(_NEVER_ANONYMISE_SYSTEM_CONFIG, dict)
 
     @pytest.mark.unit
