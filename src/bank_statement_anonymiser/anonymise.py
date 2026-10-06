@@ -185,26 +185,20 @@ def _load_system_config_as_dict(filename: str) -> dict:
         # Read the resource bytes directly
         resource = resources.files("bank_statement_anonymiser").joinpath(filename)
         if not hasattr(resource, "read_bytes"):
-            logger.warning(
-                f"Could not read bundled config '{filename}': resource API incompatible"
-            )
+            logger.warning(f"Could not read bundled config '{filename}': resource API incompatible")
             return {}
 
         toml_bytes = resource.read_bytes()
         toml_text = toml_bytes.decode("utf-8")
         return tomllib.loads(toml_text)
-    except Exception as e:
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as e:
         logger.warning(f"Failed to load bundled config '{filename}': {e}")
         return {}
 
 
 # Load system configs at module import time (cached)
-_ALWAYS_ANONYMISE_SYSTEM_CONFIG: dict = _load_system_config_as_dict(
-    "always_anonymise_system.toml"
-)
-_NEVER_ANONYMISE_SYSTEM_CONFIG: dict = _load_system_config_as_dict(
-    "never_anonymise_system.toml"
-)
+_ALWAYS_ANONYMISE_SYSTEM_CONFIG: dict = _load_system_config_as_dict("always_anonymise_system.toml")
+_NEVER_ANONYMISE_SYSTEM_CONFIG: dict = _load_system_config_as_dict("never_anonymise_system.toml")
 
 
 # ---------------------------------------------------------------------------
@@ -287,11 +281,7 @@ def _load_always_anonymise(
         except (IsADirectoryError, PermissionError, OSError) as e:
             raise ValueError(f"Failed to load user config '{path}': {e}") from e
 
-    system_rules = {
-        k: v
-        for k, v in _ALWAYS_ANONYMISE_SYSTEM_CONFIG.items()
-        if isinstance(v, str)
-    }
+    system_rules = {k: v for k, v in _ALWAYS_ANONYMISE_SYSTEM_CONFIG.items() if isinstance(v, str)}
     user_rules = _read_user_toml(user_path)
 
     # Merge: system first, user overwrites on clash.
@@ -342,14 +332,7 @@ def _load_never_anonymise(
             raise FileNotFoundError(f"User never_anonymise config not found: {user_path}")
         user_phrases = _read_user_exclude(user_path)
 
-    combined = frozenset(
-        p
-        for p in (
-            _normalise_phrase(phrase)
-            for phrase in system_phrases + user_phrases
-        )
-        if p
-    )
+    combined = frozenset(p for p in (_normalise_phrase(phrase) for phrase in system_phrases + user_phrases) if p)
     return _NeverAnonymiseConfig(phrases=combined)
 
 
