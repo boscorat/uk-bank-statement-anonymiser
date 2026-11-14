@@ -21,3 +21,11 @@ src/bank_statement_anonymiser/never_anonymise.toml
 
 # mac desktop
 .DS_Store
+
+# dev files
+ARCHITECTURE_SUMMARY.md
+CODEBASE_EXPLORATION.md
+DEVTO_ARTICLE.md
+EXPLORATION_INDEX.md
+LAUNCH_POSTS.md
+PHRASE_REPLACE_INTEGRATION.md
