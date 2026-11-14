@@ -194,7 +194,7 @@ def _replace_phrases_on_page(
         match_start = 0
 
         for char_idx in range(len(char_sequence)):
-            decoded_char, hex_pos, font_name = char_sequence[char_idx]
+            decoded_char, hex_pos, _font_name = char_sequence[char_idx]
 
             if decoded_char == search_phrase[pos]:
                 # Character matches
@@ -232,7 +232,7 @@ def _replace_phrases_on_page(
         try:
             new_stream = pike_doc.make_stream(bytes(modified_stream))
             pike_page.obj["/Contents"] = new_stream
-        except Exception as e:
+        except (OSError, RuntimeError, ValueError) as e:
             logger.warning(f"Failed to write content stream: {e}")
             return False
 
@@ -286,8 +286,7 @@ def _apply_replacements_raw(
     """
     if len(matched_sequence) != len(replacement_phrase):
         logger.error(
-            f"Mismatch in replacement application: "
-            f"{len(matched_sequence)} matched chars vs {len(replacement_phrase)} replacement chars"
+            f"Mismatch in replacement application: {len(matched_sequence)} matched chars vs {len(replacement_phrase)} replacement chars"
         )
         return False
 
@@ -308,10 +307,7 @@ def _apply_replacements_raw(
             try:
                 replacement_byte = ord(replacement_char)
             except (TypeError, ValueError):
-                logger.warning(
-                    f"Cannot find replacement byte for '{replacement_char}' in font {font_name}; "
-                    f"cannot apply replacement"
-                )
+                logger.warning(f"Cannot find replacement byte for '{replacement_char}' in font {font_name}; cannot apply replacement")
                 return False
 
         # Convert replacement byte to 2 hex characters (uppercase)
@@ -335,7 +331,6 @@ def _apply_replacements_raw(
             return False
 
     return success_count == len(matched_sequence)
-
 
 
 def phrase_replace_pdf(
@@ -424,7 +419,7 @@ def phrase_replace_pdf(
                 ):
                     replacements_total += 1
                     logger.debug(f"Made replacements on page {page_num}")
-            except Exception as e:
+            except (OSError, pikepdf.PdfError, ValueError, RuntimeError) as e:
                 logger.warning(f"Error processing page {page_num}: {e}")
                 continue
 
@@ -432,8 +427,7 @@ def phrase_replace_pdf(
         try:
             pike_doc.save(output_path)
             logger.info(
-                f"Phrase replacement complete: {replacements_total} pages modified, "
-                f"saved to {output_path}"
+                f"Phrase replacement complete: {replacements_total} pages modified, saved to {output_path}"
             )
         except (OSError, pikepdf.PdfError) as e:
             raise ValueError(f"Failed to write output PDF: {e}") from e
@@ -441,7 +435,7 @@ def phrase_replace_pdf(
     finally:
         try:
             pike_doc.close()
-        except Exception:
-            pass
+        except (OSError, pikepdf.PdfError) as e:
+            logger.debug(f"Could not close PDF cleanly: {e}")
 
     return output_path

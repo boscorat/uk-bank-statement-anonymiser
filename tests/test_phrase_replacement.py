@@ -18,9 +18,7 @@ Coverage:
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pikepdf
 import pytest
@@ -30,9 +28,7 @@ from bank_statement_anonymiser._shared import _decode_pdf_operand
 from bank_statement_anonymiser.anonymise_phrase import (
     _apply_replacements_raw,
     _decode_byte,
-    _replace_phrases_on_page,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -45,11 +41,9 @@ def _write_toml(path: Path, content: str) -> Path:
     return path
 
 
-def _make_hex_pdf_with_text(
-    tmp_path: Path, *lines: str, filename: str = "src.pdf"
-) -> Path:
+def _make_hex_pdf_with_text(tmp_path: Path, *lines: str, filename: str = "src.pdf") -> Path:
     """Create a one-page PDF where text is stored in hex format (like anonymised PDFs).
-    
+
     This mimics the format produced by anonymised PDFs where byte strings are
     stored as hex-encoded values instead of ASCII strings.
     """
@@ -255,9 +249,7 @@ class TestBasicPhraseReplacement:
 
     def test_multiple_occurrences_all_replaced(self, tmp_path: Path):
         """All occurrences of phrase should be replaced."""
-        pdf = _make_hex_pdf_with_text(
-            tmp_path, "hello hello hello", filename="test.pdf"
-        )
+        pdf = _make_hex_pdf_with_text(tmp_path, "hello hello hello", filename="test.pdf")
         config = _write_toml(
             tmp_path / "phrase_replace.toml",
             """[phrase_replace]
@@ -583,9 +575,7 @@ class TestApplyReplacementsRaw:
         # Replace 'A' at position 1 with 'X' (0x58)
         matched = [("A", 1, "/F1"), ("B", 3, "/F1"), ("C", 5, "/F1")]
 
-        result = _apply_replacements_raw(
-            stream, matched, "XXX", reverse_maps, debug=False
-        )
+        result = _apply_replacements_raw(stream, matched, "XXX", reverse_maps, debug=False)
 
         assert result is True
         # Check that hex was modified

@@ -21,4 +21,11 @@ from bank_statement_anonymiser.anonymise_phrase import phrase_replace_pdf
 from bank_statement_anonymiser.logging_config import get_logger, get_verbosity, set_verbosity
 
 __version__ = version("uk-bank-statement-anonymiser")
-__all__ = ["__version__", "anonymise_pdf", "phrase_replace_pdf", "get_logger", "get_verbosity", "set_verbosity"]
+__all__ = [
+    "__version__",
+    "anonymise_pdf",
+    "get_logger",
+    "get_verbosity",
+    "phrase_replace_pdf",
+    "set_verbosity",
+]

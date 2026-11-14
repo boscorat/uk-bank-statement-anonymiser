@@ -387,9 +387,7 @@ def _load_phrase_replace(
             validated = {}
             for search_phrase, replacement_phrase in rules_section.items():
                 if not isinstance(search_phrase, str) or not isinstance(replacement_phrase, str):
-                    logger.warning(
-                        "Skipping invalid phrase_replace rule: both search and replacement must be strings"
-                    )
+                    logger.warning("Skipping invalid phrase_replace rule: both search and replacement must be strings")
                     continue
                 if len(search_phrase) != len(replacement_phrase):
                     logger.warning(
