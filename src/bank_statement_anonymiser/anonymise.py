@@ -220,6 +220,18 @@ class _NeverAnonymiseConfig:
     phrases: frozenset[str]  # normalised: lowercase, no whitespace
 
 
+@dataclass(frozen=True, slots=True)
+class _PhraseReplaceConfig:
+    """Phrase replacement rules for character-by-character sequence replacement.
+
+    Used by phrase_replace_pdf() to replace sequences of characters in already-
+    anonymised PDFs. Both search and replacement phrases must be exactly the
+    same length (enforced at load time).
+    """
+
+    rules: dict[str, str]  # search_phrase -> replacement_phrase (must be same length)
+
+
 # ---------------------------------------------------------------------------
 # Normalisation helper
 # ---------------------------------------------------------------------------
@@ -336,6 +348,66 @@ def _load_never_anonymise(
     return _NeverAnonymiseConfig(phrases=combined)
 
 
+def _load_phrase_replace(
+    user_path: Path | None,
+) -> _PhraseReplaceConfig:
+    """Load phrase replacement rules from user config file.
+
+    Phrase replacement is used by phrase_replace_pdf() to replace character
+    sequences in already-anonymised PDFs. Both search and replacement phrases
+    must be exactly the same length (enforced during load).
+
+    Args:
+        user_path: Path to an optional user-defined phrase_replace.toml file.
+            If not provided, returns empty config.
+
+    Returns:
+        Configuration with phrase replacement rules.
+
+    Raises:
+        FileNotFoundError: If user_path is provided but does not exist.
+        ValueError: If user_path cannot be read or contains invalid rules.
+    """
+
+    def _read_user_phrase_replace(path: Path | None) -> dict[str, str]:
+        if path is None:
+            return {}
+        if not path.exists():
+            raise FileNotFoundError(f"User phrase_replace config not found: {path}")
+        try:
+            with path.open("rb") as fh:
+                data = tomllib.load(fh)
+
+            # Look for [phrase_replace] section first, otherwise treat top-level as rules
+            rules_section = data.get("phrase_replace", {})
+            if not isinstance(rules_section, dict):
+                rules_section = {}
+
+            # Validate and filter: both key and value must be strings of same length
+            validated = {}
+            for search_phrase, replacement_phrase in rules_section.items():
+                if not isinstance(search_phrase, str) or not isinstance(replacement_phrase, str):
+                    logger.warning("Skipping invalid phrase_replace rule: both search and replacement must be strings")
+                    continue
+                if len(search_phrase) != len(replacement_phrase):
+                    logger.warning(
+                        f"Skipping phrase_replace rule '{search_phrase}': "
+                        f"search length {len(search_phrase)} != replacement length {len(replacement_phrase)}"
+                    )
+                    continue
+                if not search_phrase or not replacement_phrase:
+                    logger.warning("Skipping empty phrase_replace rule")
+                    continue
+                validated[search_phrase] = replacement_phrase
+
+            return validated
+        except (IsADirectoryError, PermissionError, OSError) as e:
+            raise ValueError(f"Failed to load user phrase_replace config '{path}': {e}") from e
+
+    user_rules = _read_user_phrase_replace(user_path)
+    return _PhraseReplaceConfig(rules=user_rules)
+
+
 # ---------------------------------------------------------------------------
 # Font encoding metadata
 # ---------------------------------------------------------------------------
@@ -349,7 +421,7 @@ class _FontEncoding(NamedTuple):
     forward_map: dict[int, str]
     """CID/glyph_byte -> Unicode character mapping from ToUnicode CMap."""
     is_identity_h: bool
-    """True if font uses Identity-H encoding (CID-keyed, multi-byte). 
+    """True if font uses Identity-H encoding (CID-keyed, multi-byte).
     False for single-byte encodings like WinAnsiEncoding."""
 
 

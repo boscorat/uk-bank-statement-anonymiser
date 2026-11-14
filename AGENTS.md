@@ -3,7 +3,7 @@
 ## Quick setup
 ```bash
 uv sync           # Install all dependencies (dev included)
-uv run pytest     # Run all tests (508 tests)
+uv run pytest     # Run all tests (690 tests)
 uv run ruff check src tests  # Lint
 ```
 
@@ -31,6 +31,53 @@ A Python library that anonymises UK bank statement PDFs by scrambling personal d
 - UTF-16-BE (with BOM) or Latin-1 fallbacks are used for CMap stream decoding.
 - Scrambled chars are re-encoded back into the font's specific encoding.
 
+## Post-Anonymisation Phrase Replacement
+
+**Feature:** `phrase_replace_pdf()` — Fix phrases that weren't anonymised correctly by the main pipeline.
+
+**Use case:** Sometimes non-standard formats (e.g., "1st Sep" with ordinal suffix) don't match built-in patterns and get scrambled character-by-character to "1a Uad". This function allows users to reverse this by providing a config file with exact search→replacement mappings.
+
+**Public API:** `bank_statement_anonymiser.phrase_replace_pdf(input_path, output_path=None, phrase_replace_path=None) -> Path`
+
+**Config format:** TOML file with `[phrase_replace]` section
+```toml
+[phrase_replace]
+"1a Uad" = "1st Sep"
+"lg Eaw" = "th Sep"
+```
+
+**Key constraints:**
+- Both search and replacement phrases must be **exactly the same length** (character-by-character)
+- Matching is **case-sensitive** and **space-sensitive**
+- Replacements are applied to **all pages** independently (not cross-page)
+- Uses the same font decoding infrastructure as anonymisation
+
+**Algorithm:**
+1. Parse page content streams and extract Tj/TJ character operators
+2. Decode operator bytes using font's ToUnicode CMap
+3. Scan decoded text for search phrase matches character-by-character
+4. Replace matched bytes at original positions in hex-encoded content stream
+5. Write modified stream back to page
+
+**Technical implementation:** `src/bank_statement_anonymiser/anonymise_phrase.py`
+- Works with raw hex-encoded byte strings (e.g., `<414243>Tj`)
+- Each byte is 2 hex characters; replacements modify hex digits directly
+- Preserves PDF compression filters (FlateDecode re-applied automatically)
+- Supports multi-byte CID fonts and single-byte fonts using reverse font maps
+
+**Example usage:**
+```python
+from pathlib import Path
+from bank_statement_anonymiser import phrase_replace_pdf
+
+# Fix scrambled phrases in already-anonymised PDF
+result = phrase_replace_pdf(
+    Path("anonymised_statement.pdf"),
+    output_path=Path("fixed_statement.pdf"),
+    phrase_replace_path=Path("phrase_fixes.toml")
+)
+```
+
 ## Testing structure
 - **Markers:** `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.slow` (defined in `pyproject.toml`)
 - **Fixtures:** `conftest.py` provides `mock_random_source` (seeded with 42), `simple_text_pdf`, `always_anonymise_config`, `never_anonymise_config`, `output_dir`.
@@ -42,6 +89,7 @@ uv run pytest tests/test_public_api.py -v              # Just public API tests (
 uv run pytest tests/ -k "test_pattern_detection" -v   # Just pattern detection
 uv run pytest tests/ -m unit -v                        # Just unit tests
 uv run pytest tests/test_font_encoding.py -v           # Font encoding tests
+uv run pytest tests/test_phrase_replacement.py -v      # Phrase replacement tests (29 tests)
 ```
 
 ## Config files (TOML)
