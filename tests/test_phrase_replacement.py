@@ -115,7 +115,11 @@ class TestPhraseReplaceConfigLoading:
     """Tests for loading and validating phrase_replace.toml config files."""
 
     def test_missing_config_file_raises_error(self, tmp_path: Path):
-        """Missing config file should raise FileNotFoundError."""
+        """Missing config file should raise ValueError.
+
+        Note: FileNotFoundError from missing config is caught and wrapped as ValueError
+        for consistency with other config loading errors (malformed TOML, etc.).
+        """
         pdf = _make_hex_pdf_with_text(tmp_path, "hello world", filename="test.pdf")
         config = tmp_path / "missing_config.toml"
 

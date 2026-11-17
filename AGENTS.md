@@ -48,7 +48,8 @@ A Python library that anonymises UK bank statement PDFs by scrambling personal d
 
 **Key constraints:**
 - Both search and replacement phrases must be **exactly the same length** (character-by-character)
-- Matching is **case-sensitive** and **space-sensitive**
+- Matching is **case-sensitive** and **space-sensitive** — spaces are significant characters
+  - Example: `"21a Uad"` (with space) ≠ `"21aUad"` (without space) — only the first matches
 - Replacements are applied to **all pages** independently (not cross-page)
 - Uses the same font decoding infrastructure as anonymisation
 

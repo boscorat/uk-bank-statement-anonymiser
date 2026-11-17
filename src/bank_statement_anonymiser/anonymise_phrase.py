@@ -353,7 +353,7 @@ def phrase_replace_pdf(
         input_path: Path to already-anonymised PDF to process.
         output_path: Output path (default: phrase_replaced_<stem>.pdf next to input).
         phrase_replace_path: Path to user phrase_replace.toml config file.
-            If not provided, uses defaults (likely empty, so no-op).
+            If not provided, the input PDF is copied unchanged to output.
 
     Returns:
         Path to the modified PDF.
@@ -426,9 +426,7 @@ def phrase_replace_pdf(
         # Write output PDF
         try:
             pike_doc.save(output_path)
-            logger.info(
-                f"Phrase replacement complete: {replacements_total} pages modified, saved to {output_path}"
-            )
+            logger.info(f"Phrase replacement complete: {replacements_total} pages modified, saved to {output_path}")
         except (OSError, pikepdf.PdfError) as e:
             raise ValueError(f"Failed to write output PDF: {e}") from e
 

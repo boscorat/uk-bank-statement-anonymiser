@@ -13,6 +13,9 @@ wheels/
 src/bank_statement_anonymiser/always_anonymise.toml
 src/bank_statement_anonymiser/never_anonymise.toml
 
+# User phrase replacement config files (not committed — pass via phrase_replace_path arg)
+phrase_replace.toml
+
 # PDF files (example/test statements — not committed)
 *.pdf
 
